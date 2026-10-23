@@ -6,7 +6,9 @@ A browser extension for Pragmatic Play Live Blackjack on Stake. It reads the tab
 
 ## Install
 
-Build it with pnpm:
+The easiest way is the latest release. On Firefox, open the signed `.xpi` and it installs for good. On Chrome, unzip the Chrome build, open `chrome://extensions`, turn on developer mode and choose Load unpacked.
+
+To build it yourself, use pnpm:
 
 ```sh
 pnpm install
