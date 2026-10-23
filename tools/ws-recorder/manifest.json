@@ -1,0 +1,21 @@
+{
+	"manifest_version": 3,
+	"name": "Stakejack WebSocket Recorder",
+	"version": "0.1.0",
+	"description": "Records Pragmatic Play Live Blackjack game socket messages.",
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "ws-recorder@stakejack.local"
+		}
+	},
+	"host_permissions": ["https://*.fcxlljmmbqtczjya.net/*"],
+	"content_scripts": [
+		{
+			"matches": ["https://*.fcxlljmmbqtczjya.net/*"],
+			"js": ["recorder.js"],
+			"run_at": "document_start",
+			"all_frames": true,
+			"world": "MAIN"
+		}
+	]
+}

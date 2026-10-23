@@ -1,0 +1,152 @@
+@import 'tailwindcss';
+
+/*
+ * Geist, Vercel's typeface, Latin subset only. The files are inlined into the stylesheet at build time and
+ * WXT moves @font-face rules to the page, since fonts cannot be declared inside a shadow root. The family
+ * names are prefixed so they never collide with the game's own fonts.
+ */
+@font-face {
+	font-family: 'Stakejack Geist';
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('@fontsource-variable/geist/files/geist-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+@font-face {
+	font-family: 'Stakejack Geist Mono';
+	font-style: normal;
+	font-weight: 100 900;
+	font-display: swap;
+	src: url('@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+}
+
+/*
+ * The panel lives inside the game's iframe, whose root font size belongs to the game. Pixel spacing and
+ * type keep the panel the same size no matter how the game scales its own document.
+ */
+@theme {
+	--font-sans: 'Stakejack Geist', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'Stakejack Geist Mono', ui-monospace, monospace;
+	--spacing: 4px;
+	--text-xs: 12px;
+	--text-xs--line-height: 16px;
+	--text-sm: 13px;
+	--text-sm--line-height: 20px;
+	--text-base: 14px;
+	--text-base--line-height: 22px;
+	--text-2xl: 24px;
+	--text-2xl--line-height: 30px;
+
+	/* The one large line in the panel: the move to make or the bet to place. */
+	--text-display: 28px;
+	--text-display--line-height: 32px;
+	--text-display--letter-spacing: -0.02em;
+	--text-display--font-weight: 600;
+}
+
+/*
+ * shadcn/ui neutral theme, dark only: the panel always sits over the dark game table. WXT resets every
+ * ordinary property on the shadow host with `all: initial`, but custom properties survive, so only theme
+ * tokens live here and the panel positions itself.
+ */
+:root,
+:host {
+	--radius: 10px;
+	--background: oklch(0.145 0 0);
+	--foreground: oklch(0.97 0 0);
+	--card: oklch(0.165 0.002 260 / 88%);
+	--card-foreground: oklch(0.97 0 0);
+	--primary: oklch(0.922 0 0);
+	--primary-foreground: oklch(0.205 0 0);
+	--secondary: oklch(0.24 0.002 260);
+	--secondary-foreground: oklch(0.97 0 0);
+	--muted: oklch(0.22 0.002 260);
+	--muted-foreground: oklch(0.66 0.005 260);
+	--accent: oklch(0.26 0.002 260);
+	--accent-foreground: oklch(0.97 0 0);
+	--destructive: oklch(0.704 0.191 22.216);
+	--border: oklch(1 0 0 / 9%);
+	--ring: oklch(0.556 0 0);
+
+	/* Playing cards: warm paper, dark ink, and a muted red for hearts and diamonds. */
+	--card-paper: oklch(0.955 0.008 85);
+	--card-ink: oklch(0.22 0.01 260);
+	--card-ink-red: oklch(0.55 0.16 25);
+
+	/*
+	 * Each move keeps one soft accent so the recommendation reads at a glance; everything else stays
+	 * tonal.
+	 */
+	--action-hit: oklch(0.8 0.09 235);
+	--action-stand: oklch(0.86 0.1 85);
+	--action-double: oklch(0.82 0.1 160);
+	--action-split: oklch(0.8 0.09 300);
+	--action-cash-out: oklch(0.85 0 0);
+
+	/* Hand outlooks: a win, a push, or a loss against the dealer. */
+	--outcome-win: oklch(0.8 0.11 160);
+	--outcome-push: oklch(0.6 0 0);
+	--outcome-lose: oklch(0.7 0.13 22);
+}
+
+@theme inline {
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-border: var(--border);
+	--color-ring: var(--ring);
+	--color-action-hit: var(--action-hit);
+	--color-action-stand: var(--action-stand);
+	--color-action-double: var(--action-double);
+	--color-action-split: var(--action-split);
+	--color-action-cash-out: var(--action-cash-out);
+	--color-card-paper: var(--card-paper);
+	--color-card-ink: var(--card-ink);
+	--color-card-ink-red: var(--card-ink-red);
+	--color-outcome-win: var(--outcome-win);
+	--color-outcome-push: var(--outcome-push);
+	--color-outcome-lose: var(--outcome-lose);
+}
+
+@layer base {
+	/*
+	 * Tailwind v4 seeds these variables with @property, which browsers ignore inside a shadow root.
+	 * Without explicit defaults, borders, shadows, and rings silently disappear.
+	 */
+	*,
+	::before,
+	::after {
+		--tw-border-style: solid;
+		--tw-shadow: 0 0 #0000;
+		--tw-shadow-color: initial;
+		--tw-shadow-alpha: 100%;
+		--tw-inset-shadow: 0 0 #0000;
+		--tw-inset-shadow-color: initial;
+		--tw-inset-shadow-alpha: 100%;
+		--tw-ring-color: initial;
+		--tw-ring-shadow: 0 0 #0000;
+		--tw-inset-ring-color: initial;
+		--tw-inset-ring-shadow: 0 0 #0000;
+		--tw-ring-inset: initial;
+		--tw-ring-offset-width: 0px;
+		--tw-ring-offset-color: #fff;
+		--tw-ring-offset-shadow: 0 0 #0000;
+
+		border-color: var(--color-border);
+	}
+}

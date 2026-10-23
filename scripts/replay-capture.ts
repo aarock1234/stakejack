@@ -1,0 +1,98 @@
+import { readFile } from 'node:fs/promises';
+
+import { z } from 'zod';
+
+import { AdvisorStore } from '@/advisor/advisor-store';
+import type { AdvisorView, HandDecision } from '@/advisor/advisor-view';
+import { BridgeSource } from '@/game/bridge';
+import type { BridgeMessage } from '@/game/bridge';
+import { actionLabel, formatCount, formatPercent, handLabel } from '@/ui/format';
+
+// Replays a capture from tools/ws-recorder through the advisor and prints every piece of advice it
+// would have shown. Usage: pnpm replay <capture.json>
+
+const CaptureDirection = {
+	RECEIVED: 'received',
+	SENT: 'sent',
+} as const;
+
+const captureSchema = z.array(
+	z.object({
+		direction: z.enum(CaptureDirection),
+		data: z.string(),
+	})
+);
+
+type CapturedFrame = z.infer<typeof captureSchema>[number];
+
+function toBridgeMessage(frame: CapturedFrame): BridgeMessage {
+	return {
+		source: frame.direction === CaptureDirection.RECEIVED ? BridgeSource.SOCKET_RECEIVED : BridgeSource.SOCKET_SENT,
+		data: frame.data,
+	};
+}
+
+// "Hand 1 · Pair of 2s vs 2: Split (Split +1.2%, Hit −10.0%)"
+function describeDecision(decision: HandDecision): string {
+	const { advice } = decision;
+	const hand = decision.isSplitHand ? `Hand ${decision.handIndex + 1} · ` : '';
+	const active = decision.isActive ? ' [active]' : '';
+	const book = decision.bookAction ? ` [book: ${actionLabel(decision.bookAction)}]` : '';
+	const situation = `${hand}${handLabel(
+		decision.playerCards.map(card => card.rank),
+		decision.canSplit
+	)} vs ${decision.dealerUpCard.face}`;
+
+	const options = advice.options
+		.map(option => `${actionLabel(option.action)} ${formatPercent(option.expectedValue)}`)
+		.join(', ');
+
+	return `seat ${decision.seatNumber} ${situation}${active}: ${actionLabel(advice.best.action)}${book} (${options})`;
+}
+
+function describeView(view: AdvisorView): string[] {
+	const lines = view.decisions.map(describeDecision);
+
+	for (const seat of view.outlooks) {
+		const hands = seat.hands.map(
+			standing =>
+				`${standing.total}${standing.isBust ? ' bust' : ''}${standing.isInPlay ? ' (in play)' : ` win ${formatPercent(standing.outlook.win)} push ${formatPercent(standing.outlook.push)}`}`
+		);
+
+		lines.push(`  table seat ${seat.seatNumber}: ${hands.join(' | ')}`);
+	}
+
+	if (view.bet) {
+		const count = view.bet.trueCount === undefined ? 'untracked' : formatCount(view.bet.trueCount);
+		lines.push(`bet ${view.bet.amount} (true count ${count}, edge ${formatPercent(view.bet.edge)})`);
+	}
+
+	return lines;
+}
+
+async function main(): Promise<void> {
+	const capturePath = process.argv[2];
+
+	if (!capturePath) {
+		throw new Error('usage: pnpm replay <capture.json>');
+	}
+
+	const frames = captureSchema.parse(JSON.parse(await readFile(capturePath, 'utf8')));
+	const store = new AdvisorStore();
+	const printed = new Set<string>();
+
+	for (const frame of frames) {
+		store.handle(toBridgeMessage(frame));
+
+		for (const line of describeView(store.getSnapshot())) {
+			if (!printed.has(line)) {
+				console.log(line);
+				printed.add(line);
+			}
+		}
+	}
+
+	console.log(`final status: ${store.getSnapshot().status}`);
+}
+
+await main();
