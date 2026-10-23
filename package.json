@@ -1,6 +1,6 @@
 {
 	"name": "stakejack",
-	"version": "0.3.2",
+	"version": "0.3.4",
 	"private": true,
 	"type": "module",
 	"description": "Best-move advisor for Pragmatic Play Live Blackjack on Stake.",

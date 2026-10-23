@@ -5,7 +5,8 @@ import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type HeadlineProps = {
-	icon: LucideIcon;
+	// A Lucide icon, or an emoji for results.
+	icon: LucideIcon | string;
 	label: ReactNode;
 	// A supporting number on the right, such as the move's expected value.
 	detail?: ReactNode;
@@ -22,7 +23,11 @@ export function Headline({ icon: Icon, label, detail, textColor, tileColor }: He
 				aria-hidden
 				className={cn('grid size-9 shrink-0 place-items-center rounded-xl', tileColor ?? 'bg-muted')}
 			>
-				<Icon className={cn('size-4', textColor ?? 'text-foreground')} strokeWidth={2.25} />
+				{typeof Icon === 'string' ? (
+					<span className="text-base leading-none">{Icon}</span>
+				) : (
+					<Icon className={cn('size-4', textColor ?? 'text-foreground')} strokeWidth={2.25} />
+				)}
 			</span>
 			<p className={cn('text-display', textColor)}>{label}</p>
 			{detail !== undefined && (

@@ -4,6 +4,7 @@ import { Hourglass, Target } from 'lucide-react';
 
 import type { AdvisorView, HandStanding as HandStandingValue } from '@/advisor/advisor-view';
 
+import { Caption } from './caption';
 import { formatMoneyChange, formatShare } from './format';
 import { HandStanding, OutlookBar, settledVerdict } from './hand-standing';
 import { Headline } from './headline';
@@ -31,7 +32,7 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 		return (
 			<div className="flex flex-col gap-2">
 				<p className="text-xs text-muted-foreground">Your hand, {standing.total}</p>
-				<Headline icon={verdict.icon} label={verdict.label} textColor={verdict.color} />
+				<Headline icon={verdict.emoji} label={verdict.label} textColor={verdict.color} />
 			</div>
 		);
 	}
@@ -39,7 +40,9 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">Your {standing.total}, chance to win</p>
+				<Caption info="Your hand is done, so this is the chance the dealer ends up below you or busts. It updates with every card the dealer draws.">
+					Your {standing.total}, chance to win
+				</Caption>
 				<Headline
 					icon={Target}
 					label={<span className="font-mono tabular-nums">{formatShare(standing.outlook.win)}</span>}
@@ -74,6 +77,10 @@ function OwnHands({ standings }: OwnHandsProps): ReactElement | null {
 	);
 }
 
+// Shown behind the (i) on the shoe section.
+const SHOE_INFO =
+	'The count tracks which cards are left. Small cards leaving is good for you, tens and aces leaving is good for the house. It only works if every card since the shuffle was seen, so it waits for a fresh shoe and resets if you leave the table. Pragmatic reshuffles about halfway through the eight decks, so big swings are rare.';
+
 // The count and edge already sit in the panel header; this adds how deep the shoe is and the session.
 function overviewRows(view: AdvisorView): ValueRow[] {
 	const { shoe } = view;
@@ -107,7 +114,10 @@ export function TableOverview({ view }: TableOverviewProps): ReactElement {
 	return (
 		<section className="flex flex-col gap-3">
 			{ownStandings.length > 0 && <OwnHands standings={ownStandings} />}
-			<ValueList rows={overviewRows(view)} />
+			<div className="flex flex-col gap-2">
+				<Caption info={SHOE_INFO}>The shoe</Caption>
+				<ValueList rows={overviewRows(view)} />
+			</div>
 		</section>
 	);
 }

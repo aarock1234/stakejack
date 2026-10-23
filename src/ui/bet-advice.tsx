@@ -5,6 +5,7 @@ import { CircleDollarSign } from 'lucide-react';
 import type { BetRecommendation } from '@/advisor/advisor-view';
 import { SIDE_BET_RETURNS } from '@/strategy/betting';
 
+import { Caption } from './caption';
 import { formatMoney, formatPercent } from './format';
 import { Headline } from './headline';
 import { ValueList } from './value-list';
@@ -23,9 +24,9 @@ export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 	return (
 		<section className="flex flex-col gap-4">
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">
+				<Caption info="Bet the table minimum while the house has the edge. When the count swings in your favour, this grows to a small share of your balance, sized so a losing streak can't wipe you out. Side bets lose more than the main game, so skip them.">
 					{bet.isTableMinimum ? 'Next bet, table minimum' : 'Next bet'}
-				</p>
+				</Caption>
 				<Headline
 					icon={CircleDollarSign}
 					label={<span className="font-mono tabular-nums">{formatMoney(bet.amount, currency)}</span>}

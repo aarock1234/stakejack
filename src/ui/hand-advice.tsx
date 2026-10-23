@@ -3,11 +3,16 @@ import type { ReactElement } from 'react';
 import type { HandDecision } from '@/advisor/advisor-view';
 import { cn } from '@/lib/utils';
 
+import { Caption } from './caption';
 import { ACTION_APPEARANCE } from './action-appearance';
 import { actionLabel, formatPercent, handLabel } from './format';
 import { Headline } from './headline';
 import { PlayingCard } from './playing-card';
 import { ValueList } from './value-list';
+
+// Shown behind the (i) on every move.
+const MOVE_INFO =
+	'The move that wins the most money over time for these exact cards. The percentages are what each choice returns on your bet on average: +10% means you make 10 cents per dollar in the long run. Once the shoe is being counted, they account for the cards already played.';
 
 // "Your hand, soft 18", or "Hand 2, hard 12" once a pair has been split.
 function handCaption(decision: HandDecision): string {
@@ -32,7 +37,7 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 		<section className={cn('flex flex-col gap-4 transition-opacity', isWaiting && 'opacity-40')}>
 			<div className="flex items-end justify-between gap-3">
 				<div className="flex min-w-0 flex-col gap-2">
-					<p className="truncate text-xs text-muted-foreground">{handCaption(decision)}</p>
+					<Caption info={MOVE_INFO}>{handCaption(decision)}</Caption>
 					<div className="flex gap-1">
 						{/* Cards are only ever appended to a hand, so their position is a stable identity. */}
 						{decision.playerCards.map((card, position) => (

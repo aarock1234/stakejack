@@ -8,9 +8,15 @@ A browser extension for Pragmatic Play Live Blackjack on Stake. It reads the tab
 
 ## Install
 
-The easiest way is the latest release. On Firefox, open the signed `.xpi` and it installs for good. On Chrome, unzip the Chrome build, open `chrome://extensions`, turn on developer mode and choose Load unpacked.
+**Firefox.** Download the `.xpi` file from the latest release. Firefox will ask whether to add Stakejack. Click Add, and you're done. It stays installed and updates when you install a newer file.
 
-To build it yourself, use pnpm:
+**Chrome, Edge or Brave.** Download the Chrome `.zip` from the latest release and unzip it somewhere you won't delete it, like your Documents folder. Type `chrome://extensions` into the address bar and press Enter. Switch on Developer mode in the top right corner, click Load unpacked, and pick the unzipped folder. Keep that folder, because Chrome loads the extension from it.
+
+Then open Live Blackjack on Stake. A small Stakejack window appears in the top right of the game. You can drag it anywhere by its title, and double click the title to put it back. Tap the (i) next to any heading to see what it means.
+
+## Build it yourself
+
+Use pnpm:
 
 ```sh
 pnpm install

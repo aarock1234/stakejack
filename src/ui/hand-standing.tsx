@@ -1,8 +1,5 @@
 import type { ReactElement } from 'react';
 
-import { Equal, Trophy, X } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
-
 import type { HandStanding as HandStandingValue } from '@/advisor/advisor-view';
 import { cn } from '@/lib/utils';
 import type { HandOutlook } from '@/strategy/outlook';
@@ -11,7 +8,7 @@ import { formatShare } from './format';
 
 export type Verdict = {
 	label: string;
-	icon: LucideIcon;
+	emoji: string;
 	color: string;
 };
 
@@ -27,7 +24,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (standing.isBust) {
 		return {
 			label: 'Bust',
-			icon: X,
+			emoji: '💥',
 			color: 'text-outcome-lose',
 		};
 	}
@@ -35,7 +32,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (isCertain(outlook.win)) {
 		return {
 			label: 'Win',
-			icon: Trophy,
+			emoji: '🏆',
 			color: 'text-outcome-win',
 		};
 	}
@@ -43,7 +40,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (isCertain(outlook.push)) {
 		return {
 			label: 'Push',
-			icon: Equal,
+			emoji: '🤝',
 			color: 'text-muted-foreground',
 		};
 	}
@@ -51,7 +48,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (isCertain(outlook.lose)) {
 		return {
 			label: 'Lose',
-			icon: X,
+			emoji: '❌',
 			color: 'text-outcome-lose',
 		};
 	}
@@ -102,11 +99,9 @@ export function HandStanding({ standing }: HandStandingProps): ReactElement {
 	const verdict = settledVerdict(standing);
 
 	if (verdict) {
-		const Icon = verdict.icon;
-
 		return (
 			<span className={cn('flex items-center gap-1 text-xs font-medium', verdict.color)}>
-				<Icon aria-hidden className="size-3.5" strokeWidth={2.25} />
+				<span aria-hidden>{verdict.emoji}</span>
 				{verdict.label}
 			</span>
 		);
