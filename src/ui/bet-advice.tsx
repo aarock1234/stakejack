@@ -24,7 +24,7 @@ export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 		<section className="flex flex-col gap-4">
 			<div className="flex flex-col gap-2">
 				<p className="text-xs text-muted-foreground">
-					{bet.isTableMinimum ? 'Next bet · table minimum' : 'Next bet'}
+					{bet.isTableMinimum ? 'Next bet, table minimum' : 'Next bet'}
 				</p>
 				<Headline
 					icon={CircleDollarSign}
@@ -36,12 +36,12 @@ export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 				rows={[
 					{
 						key: 'perfect-pairs',
-						label: 'Perfect Pairs · skip',
+						label: 'Skip Perfect Pairs',
 						value: formatPercent(SIDE_BET_RETURNS.perfectPairs - 1),
 					},
 					{
 						key: 'twenty-one-plus-three',
-						label: '21+3 · skip',
+						label: 'Skip 21+3',
 						value: formatPercent(SIDE_BET_RETURNS.twentyOnePlusThree - 1),
 					},
 				]}

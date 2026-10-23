@@ -43,9 +43,7 @@ function ShoeStrip({ shoe }: ShoeStripProps): ReactElement {
 			>
 				<Scale aria-hidden className="size-3.5" />
 				<span className="tabular-nums">{edge}</span>
-				<span className="rounded-sm bg-muted px-1 py-px text-[10px] leading-none text-muted-foreground">
-					{isCounted ? 'counted' : 'base'}
-				</span>
+				<span className="text-muted-foreground/70">{isCounted ? 'Counted' : 'Base'}</span>
 			</span>
 		</div>
 	);
@@ -113,7 +111,7 @@ export function PanelCard({ view, unanchoredOutlooks, dragHandle, className, sty
 					'grid-rows-1 px-4 py-3',
 					dragHandle && 'cursor-grab touch-none select-none active:cursor-grabbing'
 				)}
-				title={dragHandle && 'Drag to move · double-click to reset'}
+				title={dragHandle && 'Drag to move. Double-click to reset.'}
 				{...dragHandle}
 			>
 				<CardTitle className="flex items-center gap-2 text-xs font-medium tracking-tight">

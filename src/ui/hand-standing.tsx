@@ -102,7 +102,14 @@ export function HandStanding({ standing }: HandStandingProps): ReactElement {
 	const verdict = settledVerdict(standing);
 
 	if (verdict) {
-		return <span className={cn('font-mono text-xs font-medium', verdict.color)}>{verdict.label}</span>;
+		const Icon = verdict.icon;
+
+		return (
+			<span className={cn('flex items-center gap-1 text-xs font-medium', verdict.color)}>
+				<Icon aria-hidden className="size-3.5" strokeWidth={2.25} />
+				{verdict.label}
+			</span>
+		);
 	}
 
 	return (

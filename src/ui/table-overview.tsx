@@ -21,7 +21,7 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	if (standing.isInPlay) {
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">Your hand · in play</p>
+				<p className="text-xs text-muted-foreground">Your hand, in play</p>
 				<Headline icon={Hourglass} label={<span className="font-mono tabular-nums">{standing.total}</span>} />
 			</div>
 		);
@@ -30,7 +30,7 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	if (verdict) {
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">Your hand · {standing.total}</p>
+				<p className="text-xs text-muted-foreground">Your hand, {standing.total}</p>
 				<Headline icon={verdict.icon} label={verdict.label} textColor={verdict.color} />
 			</div>
 		);
@@ -39,7 +39,7 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">Your hand · {standing.total} · chance to win</p>
+				<p className="text-xs text-muted-foreground">Your {standing.total}, chance to win</p>
 				<Headline
 					icon={Target}
 					label={<span className="font-mono tabular-nums">{formatShare(standing.outlook.win)}</span>}

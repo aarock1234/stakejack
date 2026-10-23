@@ -9,12 +9,12 @@ import { Headline } from './headline';
 import { PlayingCard } from './playing-card';
 import { ValueList } from './value-list';
 
-// "Your hand · Soft 18", or "Hand 2 · Hard 12" once a pair has been split.
+// "Your hand, soft 18", or "Hand 2, hard 12" once a pair has been split.
 function handCaption(decision: HandDecision): string {
 	const name = decision.isSplitHand ? `Hand ${decision.handIndex + 1}` : 'Your hand';
 	const ranks = decision.playerCards.map(card => card.rank);
 
-	return `${name} · ${handLabel(ranks, decision.canSplit)}`;
+	return `${name}, ${handLabel(ranks, decision.canSplit).toLowerCase()}`;
 }
 
 type HandAdviceProps = {
@@ -58,7 +58,7 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 
 				{decision.bookAction && (
 					<p className="text-xs text-muted-foreground">
-						Count play · book says {actionLabel(decision.bookAction).toLowerCase()}
+						Count play. Book says {actionLabel(decision.bookAction).toLowerCase()}.
 					</p>
 				)}
 			</div>
