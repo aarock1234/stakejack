@@ -1,3 +1,5 @@
+<img src="docs/icon.svg" width="56" height="56" alt="Stakejack icon" />
+
 # Stakejack
 
 ![Stakejack panel](docs/preview.png)
