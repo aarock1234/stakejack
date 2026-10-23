@@ -6,6 +6,7 @@ import { AdvisorStatus } from '@/advisor/advisor-view';
 
 import { PanelCard } from './panel-card';
 import { SeatOutlooks } from './seat-outlooks';
+import { usePanelPosition } from './use-panel-position';
 import { useSeatAnchors } from './use-seat-anchors';
 
 type AdvisorPanelProps = {
@@ -14,10 +15,12 @@ type AdvisorPanelProps = {
 	isShownWhileConnecting: boolean;
 };
 
-// The live panel: follows the store, finds the game's seats, and pins itself over the table.
+// The live panel: follows the store, finds the game's seats, and floats over the table wherever the player
+// drags it.
 export function AdvisorPanel({ store, isShownWhileConnecting }: AdvisorPanelProps): ReactElement | null {
 	const view = useSyncExternalStore(store.subscribe, store.getSnapshot);
 	const anchors = useSeatAnchors(view.outlooks.map(seat => seat.seatNumber));
+	const { position, dragHandle } = usePanelPosition();
 
 	if (view.status === AdvisorStatus.CONNECTING && !isShownWhileConnecting) {
 		return null;
@@ -25,13 +28,17 @@ export function AdvisorPanel({ store, isShownWhileConnecting }: AdvisorPanelProp
 
 	const unanchoredOutlooks = view.outlooks.filter(seat => !anchors.has(seat.seatNumber));
 
-	// The panel sits below the game's lobby button and chat box, which occupy the top-right corner.
 	return (
 		<>
 			<PanelCard
 				view={view}
 				unanchoredOutlooks={unanchoredOutlooks}
-				className="fixed top-28 right-3 z-2147483647"
+				dragHandle={dragHandle}
+				className="fixed z-2147483647"
+				style={{
+					top: position.top,
+					right: position.right,
+				}}
 			/>
 			<SeatOutlooks outlooks={view.outlooks} anchors={anchors} />
 		</>

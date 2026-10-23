@@ -88,7 +88,7 @@ function overviewRows(view: AdvisorView): ValueRow[] {
 	if (view.wallet && view.sessionChange !== undefined) {
 		rows.push({
 			key: 'session',
-			label: 'Session',
+			label: 'Session P/L',
 			value: formatMoneyChange(view.sessionChange, view.wallet.currency),
 		});
 	}

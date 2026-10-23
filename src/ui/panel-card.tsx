@@ -1,5 +1,5 @@
 import { Fragment } from 'react';
-import type { ReactElement } from 'react';
+import type { CSSProperties, ReactElement } from 'react';
 
 import { Layers, Scale, Spade, Wallet } from 'lucide-react';
 
@@ -15,15 +15,19 @@ import { HandAdvice } from './hand-advice';
 import { InsuranceAdvice } from './insurance-advice';
 import { TableOutlooks } from './table-outlooks';
 import { TableOverview } from './table-overview';
+import type { DragHandle } from './use-panel-position';
 
 type ShoeStripProps = {
 	shoe: ShoeSummary;
 };
 
-// Always visible: where the count stands and who holds the edge on the next hand.
+// Always visible: where the count stands and who holds the edge on the next hand. Without a count the edge
+// is the table's base house edge; with one it is adjusted for the cards left.
 function ShoeStrip({ shoe }: ShoeStripProps): ReactElement {
+	const isCounted = shoe.trueCount !== undefined;
 	const count = shoe.trueCount === undefined ? 'No count yet' : `Count ${formatCount(shoe.trueCount)}`;
-	const edge = `${shoe.edge > 0 ? 'Your edge' : 'House'} ${formatShare(Math.abs(shoe.edge))}`;
+	const holder = shoe.edge > 0 ? 'Your edge' : 'House';
+	const edge = `${holder} ${formatShare(Math.abs(shoe.edge))}`;
 
 	return (
 		<div className="flex items-center justify-between gap-3 border-t px-4 py-2 text-xs text-muted-foreground">
@@ -39,6 +43,9 @@ function ShoeStrip({ shoe }: ShoeStripProps): ReactElement {
 			>
 				<Scale aria-hidden className="size-3.5" />
 				<span className="tabular-nums">{edge}</span>
+				<span className="rounded-sm bg-muted px-1 py-px text-[10px] leading-none text-muted-foreground">
+					{isCounted ? 'counted' : 'base'}
+				</span>
 			</span>
 		</div>
 	);
@@ -81,11 +88,14 @@ type PanelCardProps = {
 	view: AdvisorView;
 	// Seats the game has not drawn where outlooks could rest beside them; listed in the panel instead.
 	unanchoredOutlooks: readonly SeatOutlook[];
+	// Makes the header a handle for moving the panel around the table.
+	dragHandle?: DragHandle;
 	className?: string;
+	style?: CSSProperties;
 };
 
 // The panel as drawn, independent of where its data comes from.
-export function PanelCard({ view, unanchoredOutlooks, className }: PanelCardProps): ReactElement {
+export function PanelCard({ view, unanchoredOutlooks, dragHandle, className, style }: PanelCardProps): ReactElement {
 	const isConnecting = view.status === AdvisorStatus.CONNECTING;
 
 	return (
@@ -96,8 +106,16 @@ export function PanelCard({ view, unanchoredOutlooks, className }: PanelCardProp
 				'w-68 gap-0 overflow-hidden rounded-2xl py-0 font-sans shadow-[inset_0_1px_0_oklch(1_0_0/6%),0_24px_48px_-12px_oklch(0_0_0/65%)] backdrop-blur-xl',
 				className
 			)}
+			style={style}
 		>
-			<CardHeader className="grid-rows-1 px-4 py-3">
+			<CardHeader
+				className={cn(
+					'grid-rows-1 px-4 py-3',
+					dragHandle && 'cursor-grab touch-none select-none active:cursor-grabbing'
+				)}
+				title={dragHandle && 'Drag to move · double-click to reset'}
+				{...dragHandle}
+			>
 				<CardTitle className="flex items-center gap-2 text-xs font-medium tracking-tight">
 					<span
 						aria-hidden

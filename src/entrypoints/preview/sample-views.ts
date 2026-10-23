@@ -102,13 +102,27 @@ const OWN_OUTLOOK: SeatOutlook = {
 	],
 };
 
+export const SampleId = {
+	MOVE: 'move',
+	SPLIT: 'split',
+	INSURANCE: 'insurance',
+	BETTING: 'betting',
+	OVERVIEW: 'overview',
+	WATCHING: 'watching',
+	LOADING: 'loading',
+} as const;
+
+export type SampleId = (typeof SampleId)[keyof typeof SampleId];
+
 export type PreviewSample = {
+	id: SampleId;
 	title: string;
 	view: AdvisorView;
 };
 
 export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 	{
+		id: SampleId.MOVE,
 		title: 'Your move',
 		view: {
 			status: AdvisorStatus.SEATED,
@@ -125,6 +139,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		},
 	},
 	{
+		id: SampleId.SPLIT,
 		title: 'Split hands',
 		view: {
 			status: AdvisorStatus.SEATED,
@@ -149,6 +164,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		},
 	},
 	{
+		id: SampleId.INSURANCE,
 		title: 'Insurance',
 		view: {
 			status: AdvisorStatus.SEATED,
@@ -160,6 +176,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		},
 	},
 	{
+		id: SampleId.BETTING,
 		title: 'Betting',
 		view: {
 			status: AdvisorStatus.SEATED,
@@ -178,6 +195,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		},
 	},
 	{
+		id: SampleId.OVERVIEW,
 		title: 'Between decisions',
 		view: {
 			status: AdvisorStatus.SEATED,
@@ -189,6 +207,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		},
 	},
 	{
+		id: SampleId.WATCHING,
 		title: 'Watching',
 		view: {
 			status: AdvisorStatus.WATCHING,
@@ -198,6 +217,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		},
 	},
 	{
+		id: SampleId.LOADING,
 		title: 'Loading',
 		view: CONNECTING_VIEW,
 	},
