@@ -127,7 +127,7 @@ export class AdvisorStore {
 		const ownerId = this.#table.ownerOf(message.seatNumber);
 		const [dealerUpCard] = this.#table.dealerCards();
 
-		if (ownerId === undefined || dealerUpCard === undefined) {
+		if (ownerId === undefined || ownerId === this.#table.userId || dealerUpCard === undefined) {
 			return;
 		}
 

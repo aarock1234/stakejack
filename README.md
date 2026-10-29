@@ -12,7 +12,7 @@ A browser extension for Pragmatic Play Live Blackjack on Stake. It reads the tab
 
 **Chrome, Edge or Brave.** Download the Chrome `.zip` from the latest release and unzip it somewhere you won't delete it, like your Documents folder. Type `chrome://extensions` into the address bar and press Enter. Switch on Developer mode in the top right corner, click Load unpacked, and pick the unzipped folder. Keep that folder, because Chrome loads the extension from it.
 
-Then open Live Blackjack on Stake. A small Stakejack window appears in the top right of the game. You can drag it anywhere by its title, double click the title to put it back, and use the arrow beside your balance to shrink it down to just the count. It stays on screen when the window is resized. Tap the (i) next to any heading to see what it means.
+Then open Live Blackjack on Stake. A small Stakejack window appears in the top right of the game. You can drag it anywhere by its title, double click the title to put it back, and use the arrow beside your balance to shrink it down to just the count. Click a section's title, such as The shoe or This session, to fold it down to a one-line summary; the window remembers which sections you folded. It stays on screen when the window is resized. Tap the (i) next to any heading to see what it means.
 
 Small chips sit on the table above every hand and beside the dealer's score, showing the cards, each hand's chance to win and the dealer's chance to bust. Hover or tap a chip for the full breakdown. Between hands the window also shows the shoe, roughly how long until the reshuffle, and your session: rounds, money wagered, your result next to what was expected, and how often your moves matched the advice.
 

@@ -2,8 +2,10 @@ import type { ReactElement } from 'react';
 
 import type { MoveReview, SeatResult, SessionSummary } from '@/advisor/session-tracker';
 import { seatLabel } from '@/game/seats';
+import { cn } from '@/lib/utils';
 
-import { Caption } from './caption';
+import { SectionId } from './collapsed-sections';
+import { CollapsibleSection } from './collapsible-section';
 import { formatMoney, formatMoneyChange } from './format';
 import { StatGrid } from './stat-grid';
 import type { Stat } from './stat-grid';
@@ -82,24 +84,57 @@ type SessionOverviewProps = {
 	currency: string;
 };
 
+// "+$42.50 in 18 rounds" while folded.
+function SessionSummaryLine({ session, currency }: SessionOverviewProps): ReactElement {
+	const rounds = session.roundsPlayed === 1 ? 'round' : 'rounds';
+
+	return (
+		<span>
+			<span className={cn('font-medium', moneyTone(session.net))}>
+				{formatMoneyChange(session.net, currency)}
+			</span>
+			<span className="text-muted-foreground">
+				{' '}
+				in {session.roundsPlayed} {rounds}
+			</span>
+		</span>
+	);
+}
+
+// "Best seat 7" while folded: the seat that has come out furthest ahead.
+function bestSeatSummary(bySeat: readonly SeatResult[]): string {
+	const best = bySeat.reduce((leader, seat) => (seat.net > leader.net ? seat : leader));
+
+	return `Best seat ${seatLabel(best.seatNumber)}`;
+}
+
 export function SessionOverview({ session, currency }: SessionOverviewProps): ReactElement {
 	// One seat would only repeat the total above.
 	const hasPlayedSeveralSeats = session.bySeat.length > 1;
 
 	return (
-		<section className="flex flex-col gap-2.5">
-			<Caption info={SESSION_INFO}>This session</Caption>
-
+		<CollapsibleSection
+			id={SectionId.SESSION}
+			title="This session"
+			info={SESSION_INFO}
+			summary={<SessionSummaryLine session={session} currency={currency} />}
+			className="gap-2.5"
+		>
 			<StatGrid stats={sessionStats(session, currency)} />
 
 			{session.moves.movesPlayed > 0 && <ValueList rows={moveRows(session.moves, currency)} />}
 
 			{hasPlayedSeveralSeats && (
-				<div className="flex flex-col gap-1 border-t border-border-faint pt-2.5">
-					<Caption info={SEAT_INFO}>By seat</Caption>
+				<CollapsibleSection
+					id={SectionId.BY_SEAT}
+					title="By seat"
+					info={SEAT_INFO}
+					summary={bestSeatSummary(session.bySeat)}
+					className="gap-1 border-t border-border-faint pt-2.5"
+				>
 					<ValueList rows={seatRows(session.bySeat, currency)} />
-				</div>
+				</CollapsibleSection>
 			)}
-		</section>
+		</CollapsibleSection>
 	);
 }

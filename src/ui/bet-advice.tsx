@@ -6,6 +6,8 @@ import type { BetRecommendation } from '@/advisor/advisor-view';
 import { SIDE_BET_RETURNS } from '@/strategy/betting';
 
 import { Caption } from './caption';
+import { SectionId } from './collapsed-sections';
+import { CollapsibleSection } from './collapsible-section';
 import { formatMoney, formatPercent } from './format';
 import { Headline } from './headline';
 import { ValueList } from './value-list';
@@ -30,7 +32,12 @@ export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 				<Headline icon={CircleDollarSign} label={formatMoney(bet.amount, currency)} />
 			</div>
 
-			<div className="border-t border-border-faint pt-2">
+			<CollapsibleSection
+				id={SectionId.SIDE_BETS}
+				title="Side bets"
+				summary="Skip both"
+				className="border-t border-border-faint pt-3"
+			>
 				<ValueList
 					rows={[
 						{
@@ -45,7 +52,7 @@ export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 						},
 					]}
 				/>
-			</div>
+			</CollapsibleSection>
 		</section>
 	);
 }

@@ -3,9 +3,10 @@ import type { CSSProperties, ReactElement } from 'react';
 import type { DealerChance, DealerOutlook } from '@/advisor/outlook-view';
 import { DealerResult } from '@/strategy/dealer';
 
-import { Caption } from './caption';
 import { ChanceList } from './chance-list';
 import type { ChanceRow } from './chance-list';
+import { SectionId } from './collapsed-sections';
+import { CollapsibleSection } from './collapsible-section';
 import { formatHandTotal, formatShare } from './format';
 import { PlayingCard } from './playing-card';
 import { TableChip } from './table-chip';
@@ -120,12 +121,16 @@ type DealerOverviewProps = {
 	dealer: DealerOutlook;
 };
 
-// The dealer's hand in the panel, card by card, with their bust chance or how they finished.
+// The dealer's hand in the panel, card by card, with their bust chance or how they finished. Folded, it
+// keeps the total and the bust chance.
 export function DealerOverview({ dealer }: DealerOverviewProps): ReactElement {
 	return (
-		<section className="flex flex-col gap-2">
-			<Caption info={DEALER_INFO}>Dealer, {dealerTotal(dealer)}</Caption>
-
+		<CollapsibleSection
+			id={SectionId.DEALER}
+			title={`Dealer, ${dealerTotal(dealer)}`}
+			info={DEALER_INFO}
+			summary={<DealerSummary dealer={dealer} />}
+		>
 			<div className="flex items-end justify-between gap-3">
 				<div className="flex flex-wrap gap-1">
 					{/* Cards are only ever appended to a hand, so their position is a stable identity. */}
@@ -135,6 +140,6 @@ export function DealerOverview({ dealer }: DealerOverviewProps): ReactElement {
 				</div>
 				<DealerSummary dealer={dealer} />
 			</div>
-		</section>
+		</CollapsibleSection>
 	);
 }

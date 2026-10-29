@@ -2,7 +2,8 @@ import type { ReactElement } from 'react';
 
 import type { ReshuffleEstimate, ShoeSummary } from '@/advisor/shoe-view';
 
-import { Caption } from './caption';
+import { SectionId } from './collapsed-sections';
+import { CollapsibleSection } from './collapsible-section';
 import { formatDecks, formatRunningCount } from './format';
 import { ValueList } from './value-list';
 
@@ -98,20 +99,23 @@ type ShoeOverviewProps = {
 	shoe: ShoeSummary;
 };
 
+// "Reshuffle in ~6 rounds" while folded, or a note that the shoe is not being counted yet.
+function shoeSummary(shoe: CountedShoe | undefined): string {
+	return shoe ? `Reshuffle in ${reshuffleLabel(shoe.reshuffle)}` : 'Not counted yet';
+}
+
 // The true count and edge already sit in the panel header; this shows what they come from and how much of
 // the shoe is left to play.
 export function ShoeOverview({ shoe }: ShoeOverviewProps): ReactElement {
 	const counted = countedShoe(shoe);
 
 	return (
-		<section className="flex flex-col gap-2">
-			<Caption info={SHOE_INFO}>The shoe</Caption>
-
+		<CollapsibleSection id={SectionId.SHOE} title="The shoe" info={SHOE_INFO} summary={shoeSummary(counted)}>
 			{counted ? (
 				<CountedShoeDetails shoe={counted} />
 			) : (
 				<p className="text-sm text-muted-foreground">Counting starts when the dealer opens a fresh shoe.</p>
 			)}
-		</section>
+		</CollapsibleSection>
 	);
 }

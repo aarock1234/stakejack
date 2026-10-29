@@ -3,9 +3,12 @@ import type { ReactElement } from 'react';
 import type { HandDecision } from '@/advisor/advisor-view';
 import { seatLabel } from '@/game/seats';
 import { cn } from '@/lib/utils';
+import type { ActionValue } from '@/strategy/advice';
 
-import { Caption } from './caption';
 import { ACTION_APPEARANCE } from './action-appearance';
+import { Caption } from './caption';
+import { SectionId } from './collapsed-sections';
+import { CollapsibleSection } from './collapsible-section';
 import { actionLabel, formatPercent, handLabel } from './format';
 import { Headline } from './headline';
 import { PlayingCard } from './playing-card';
@@ -30,6 +33,13 @@ function handCaption(decision: HandDecision): string {
 	const ranks = decision.playerCards.map(card => card.rank);
 
 	return `${handName(decision)}, ${handLabel(ranks, decision.canSplit).toLowerCase()}`;
+}
+
+// "Stand −18.3%" while folded: the next best move, and what it would return.
+function otherMovesSummary(otherOptions: readonly ActionValue[]): string {
+	const [nextBest] = otherOptions;
+
+	return nextBest ? `${actionLabel(nextBest.action)} ${formatPercent(nextBest.expectedValue)}` : '';
 }
 
 type HandAdviceProps = {
@@ -83,7 +93,12 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 			</div>
 
 			{otherOptions.length > 0 && (
-				<div className="border-t border-border-faint pt-2">
+				<CollapsibleSection
+					id={SectionId.OTHER_MOVES}
+					title="Other moves"
+					summary={otherMovesSummary(otherOptions)}
+					className="border-t border-border-faint pt-3"
+				>
 					<ValueList
 						rows={otherOptions.map(option => ({
 							key: option.action,
@@ -91,7 +106,7 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 							value: formatPercent(option.expectedValue),
 						}))}
 					/>
-				</div>
+				</CollapsibleSection>
 			)}
 		</section>
 	);

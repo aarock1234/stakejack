@@ -43,15 +43,27 @@ function isBetterSeat(candidate: BetBehindSeat, best: BetBehindSeat | undefined)
 	return candidate.movesSeen > best.movesSeen;
 }
 
+// Someone else's seat with enough of their moves seen to judge. The player's own seats never count, whether
+// they are known from the player's commands or only from the user id the game reports for the seat.
+function judgedRecord(table: TableTracker, players: PlayerRecords, seatNumber: number): PlayerRecord | undefined {
+	const ownerId = table.ownerOf(seatNumber);
+
+	if (ownerId === undefined || ownerId === table.userId || table.ownSeats().includes(seatNumber)) {
+		return undefined;
+	}
+
+	const record = players.get(ownerId);
+
+	return record && record.movesSeen >= MIN_MOVES_SEEN ? record : undefined;
+}
+
 function bestSeatToBetBehind(table: TableTracker, players: PlayerRecords): BetBehindSeat | undefined {
-	const ownSeats = table.ownSeats();
 	let best: BetBehindSeat | undefined;
 
 	for (const seatNumber of table.occupiedSeats()) {
-		const ownerId = table.ownerOf(seatNumber);
-		const record = ownerId === undefined ? undefined : players.get(ownerId);
+		const record = judgedRecord(table, players, seatNumber);
 
-		if (ownSeats.includes(seatNumber) || !record || record.movesSeen < MIN_MOVES_SEEN) {
+		if (!record) {
 			continue;
 		}
 

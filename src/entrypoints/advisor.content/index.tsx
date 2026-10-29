@@ -9,6 +9,7 @@ import { BRIDGE_EVENT, HISTORY_EVENT, HISTORY_REQUEST_EVENT } from '@/game/bridg
 import { decodeBridgeHistory, decodeBridgeMessage } from '@/game/bridge-schema';
 import { GAME_FRAME_MATCHES, isGameClientFrame } from '@/game/game-frame';
 import { AdvisorPanel } from '@/ui/advisor-panel';
+import { CollapsedSectionsProvider } from '@/ui/collapsed-sections';
 
 // WXT renders the panel inside a custom element with this tag name.
 const UI_NAME = 'stakejack-advisor';
@@ -64,7 +65,9 @@ export default defineContentScript({
 
 				root.render(
 					<StrictMode>
-						<AdvisorPanel store={store} isShownWhileConnecting={isGameClient} />
+						<CollapsedSectionsProvider>
+							<AdvisorPanel store={store} isShownWhileConnecting={isGameClient} />
+						</CollapsedSectionsProvider>
 					</StrictMode>
 				);
 
