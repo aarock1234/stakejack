@@ -277,6 +277,9 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 			},
 			decisions: [],
 			outlooks: [],
+			seatSuggestion: {
+				seatNumber: 0,
+			},
 		},
 	},
 	{

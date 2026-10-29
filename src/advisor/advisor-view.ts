@@ -10,6 +10,8 @@ import type { BetAdvice } from '@/strategy/betting';
 
 import { describeDealer, describeOutlooks } from './outlook-view';
 import type { DealerOutlook, SeatOutlook, SeatRoles } from './outlook-view';
+import { suggestSeat } from './seat-advice';
+import type { SeatSuggestion } from './seat-advice';
 import { EMPTY_SESSION } from './session-tracker';
 import type { SessionSummary } from './session-tracker';
 import { currentTrueCount, describeShoe, trackedShoeCards, UNTRACKED_SHOE } from './shoe-view';
@@ -57,6 +59,7 @@ export type AdvisorView = {
 	decisions: readonly HandDecision[];
 	outlooks: readonly SeatOutlook[];
 	dealer?: DealerOutlook;
+	seatSuggestion?: SeatSuggestion;
 };
 
 export const CONNECTING_VIEW: AdvisorView = {
@@ -274,5 +277,6 @@ export function describeTable(table: TableTracker, session: SessionSummary): Adv
 		status: AdvisorStatus.SEATED,
 		insurance: describeInsurance(dealerCards, seatHands, shoeCardsOut),
 		decisions,
+		seatSuggestion: suggestSeat(table),
 	};
 }

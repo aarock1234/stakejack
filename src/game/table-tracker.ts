@@ -176,6 +176,11 @@ export class TableTracker {
 		return this.#hands.get(seatNumber) ?? [];
 	}
 
+	// Seats someone is known to sit at: announced, betting, or holding cards this round.
+	occupiedSeats(): ReadonlySet<number> {
+		return new Set([...this.#seatOwners.keys(), ...this.#mainBets.keys(), ...this.seatsInPlay()]);
+	}
+
 	// Player seats holding cards this round, in seat order.
 	seatsInPlay(): number[] {
 		return [...this.#hands.keys()]

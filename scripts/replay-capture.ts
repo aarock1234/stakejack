@@ -68,6 +68,10 @@ function describeView(view: AdvisorView): string[] {
 		}
 	}
 
+	if (view.seatSuggestion) {
+		lines.push(`move to seat ${view.seatSuggestion.seatNumber}`);
+	}
+
 	if (view.bet) {
 		const count = view.bet.trueCount === undefined ? 'untracked' : formatCount(view.bet.trueCount);
 		lines.push(`bet ${view.bet.amount} (true count ${count}, edge ${formatPercent(view.bet.edge)})`);

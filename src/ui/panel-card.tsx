@@ -15,6 +15,7 @@ import { formatMoney } from './format';
 import { HandAdvice } from './hand-advice';
 import { InsuranceAdvice } from './insurance-advice';
 import { RoundResultStrip } from './round-result';
+import { SeatSuggestionNote } from './seat-suggestion';
 import { ShoeStrip } from './shoe-strip';
 import { OwnSideBetWins } from './side-bet-wins';
 import { TableOutlooks } from './table-outlooks';
@@ -48,7 +49,12 @@ function PanelBody({ view }: PanelBodyProps): ReactElement {
 	}
 
 	if (view.bet && view.wallet) {
-		return <BetAdvice bet={view.bet} currency={view.wallet.currency} />;
+		return (
+			<>
+				<BetAdvice bet={view.bet} currency={view.wallet.currency} />
+				{view.seatSuggestion && <SeatSuggestionNote suggestion={view.seatSuggestion} />}
+			</>
+		);
 	}
 
 	return <TableOverview view={view} />;
