@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 
-import type { MoveReview, SessionSummary } from '@/advisor/session-tracker';
+import type { MoveReview, SeatResult, SessionSummary } from '@/advisor/session-tracker';
 
 import { Caption } from './caption';
 import { formatMoney, formatMoneyChange } from './format';
@@ -63,12 +63,28 @@ function moveRows(moves: MoveReview, currency: string): ValueRow[] {
 	return rows;
 }
 
+const SEAT_INFO =
+	'Your result from each seat you have played. Every seat draws from the same shuffled shoe, so over enough rounds the seats come out alike, and the differences here are the usual swings of blackjack.';
+
+// "Seat 3, 12 rounds" beside what the seat came to.
+function seatRows(bySeat: readonly SeatResult[], currency: string): ValueRow[] {
+	return bySeat.map(seat => ({
+		key: String(seat.seatNumber),
+		label: `Seat ${seat.seatNumber + 1}, ${seat.roundsPlayed} ${seat.roundsPlayed === 1 ? 'round' : 'rounds'}`,
+		value: formatMoneyChange(seat.net, currency),
+		tone: moneyTone(seat.net),
+	}));
+}
+
 type SessionOverviewProps = {
 	session: SessionSummary;
 	currency: string;
 };
 
 export function SessionOverview({ session, currency }: SessionOverviewProps): ReactElement {
+	// One seat would only repeat the total above.
+	const hasPlayedSeveralSeats = session.bySeat.length > 1;
+
 	return (
 		<section className="flex flex-col gap-2.5">
 			<Caption info={SESSION_INFO}>This session</Caption>
@@ -76,6 +92,13 @@ export function SessionOverview({ session, currency }: SessionOverviewProps): Re
 			<StatGrid stats={sessionStats(session, currency)} />
 
 			{session.moves.movesPlayed > 0 && <ValueList rows={moveRows(session.moves, currency)} />}
+
+			{hasPlayedSeveralSeats && (
+				<div className="flex flex-col gap-1 border-t border-border-faint pt-2.5">
+					<Caption info={SEAT_INFO}>By seat</Caption>
+					<ValueList rows={seatRows(session.bySeat, currency)} />
+				</div>
+			)}
 		</section>
 	);
 }

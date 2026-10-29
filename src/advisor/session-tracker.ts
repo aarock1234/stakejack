@@ -22,6 +22,14 @@ export type RoundResult = {
 	net: number;
 };
 
+// The rounds played from one seat. A round counts for the seat the player sat at, bets behind included.
+export type SeatResult = {
+	seatNumber: number;
+	roundsPlayed: number;
+	wagered: number;
+	net: number;
+};
+
 // Everything bet and won since the table opened in this window.
 export type SessionSummary = {
 	// The most recent round the player bet on, once it has been paid.
@@ -32,6 +40,8 @@ export type SessionSummary = {
 	// What the bets were worth on average, given the count when each went down and the moves played.
 	expected: number;
 	moves: MoveReview;
+	// Every seat the player has played from, in seat order.
+	bySeat: readonly SeatResult[];
 };
 
 export const EMPTY_SESSION: SessionSummary = {
@@ -39,6 +49,7 @@ export const EMPTY_SESSION: SessionSummary = {
 	wagered: 0,
 	net: 0,
 	expected: 0,
+	bySeat: [],
 	moves: {
 		movesPlayed: 0,
 		movesMatched: 0,
@@ -100,6 +111,21 @@ function sumOf(stakes: Iterable<Stake>, read: (stake: Stake) => number): number 
 	return total;
 }
 
+// Adds one settled round to the results of the seat it was played from.
+function withSeatRound(bySeat: readonly SeatResult[], seatNumber: number, round: RoundResult): SeatResult[] {
+	const previous = bySeat.find(seat => seat.seatNumber === seatNumber);
+	const others = bySeat.filter(seat => seat.seatNumber !== seatNumber);
+
+	const updated: SeatResult = {
+		seatNumber,
+		roundsPlayed: (previous?.roundsPlayed ?? 0) + 1,
+		wagered: (previous?.wagered ?? 0) + round.wagered,
+		net: (previous?.net ?? 0) + round.net,
+	};
+
+	return [...others, updated].toSorted((left, right) => left.seatNumber - right.seatNumber);
+}
+
 // What going against the advice gave up on a hand: the best move's value minus the chosen one's, on
 // the hand's stake. Unknown when the move was not among the options shown.
 function moveCost(offered: OfferedAdvice, action: Action): number {
@@ -117,6 +143,8 @@ function moveCost(offered: OfferedAdvice, action: Action): number {
 // of their moves compared with the advice they were shown.
 export class SessionTracker {
 	readonly #roundStakes = new Map<string, Map<string, Stake>>();
+	// The seat the player sat at in each unsettled round, by round.
+	readonly #roundSeats = new Map<string, number>();
 	readonly #offeredAdvice = new Map<string, OfferedAdvice>();
 	#summary: SessionSummary = EMPTY_SESSION;
 
@@ -128,6 +156,10 @@ export class SessionTracker {
 	// replaces the earlier one.
 	noteBet(bet: PlacedBet, edge: number): void {
 		const stakes = this.#roundStakes.get(bet.gameId) ?? new Map<string, Stake>();
+
+		if (bet.kind === BetKind.MAIN && !bet.isBehind) {
+			this.#roundSeats.set(bet.gameId, bet.seatNumber);
+		}
 
 		stakes.set(stakeKey(bet), {
 			amount: bet.amount,
@@ -145,23 +177,30 @@ export class SessionTracker {
 			return;
 		}
 
+		const seatNumber = this.#roundSeats.get(gameId);
+
 		this.#roundStakes.delete(gameId);
+		this.#roundSeats.delete(gameId);
 
 		const wagered = sumOf(stakes.values(), stake => stake.amount);
 		const expected = sumOf(stakes.values(), stake => stake.expectedValue);
-		const net = amount - wagered;
+
+		const round: RoundResult = {
+			wagered,
+			paid: amount,
+			net: amount - wagered,
+		};
+
+		const { bySeat } = this.#summary;
 
 		this.#summary = {
 			...this.#summary,
-			lastRound: {
-				wagered,
-				paid: amount,
-				net,
-			},
+			lastRound: round,
 			roundsPlayed: this.#summary.roundsPlayed + 1,
-			wagered: this.#summary.wagered + wagered,
-			net: this.#summary.net + net,
+			wagered: this.#summary.wagered + round.wagered,
+			net: this.#summary.net + round.net,
 			expected: this.#summary.expected + expected,
+			bySeat: seatNumber === undefined ? bySeat : withSeatRound(bySeat, seatNumber, round),
 		};
 	}
 

@@ -66,6 +66,20 @@ const SESSION: SessionSummary = {
 		movesMatched: 15,
 		cost: 1.2,
 	},
+	bySeat: [
+		{
+			seatNumber: 0,
+			roundsPlayed: 7,
+			wagered: 81,
+			net: 31.5,
+		},
+		{
+			seatNumber: 3,
+			roundsPlayed: 11,
+			wagered: 131,
+			net: 11,
+		},
+	],
 };
 
 type DecisionSample = {
