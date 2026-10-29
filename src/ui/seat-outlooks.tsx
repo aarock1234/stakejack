@@ -2,6 +2,7 @@ import type { CSSProperties, ReactElement } from 'react';
 
 import { SeatRole } from '@/advisor/outlook-view';
 import type { HandStanding as HandStandingValue, SeatOutlook } from '@/advisor/outlook-view';
+import { seatLabel } from '@/game/seats';
 
 import { ChanceList } from './chance-list';
 import type { ChanceRow } from './chance-list';
@@ -78,7 +79,7 @@ export function SeatOutlookChip({ seat, className, style }: SeatOutlookChipProps
 
 	return (
 		<TableChip
-			label={roleLabel ?? `Seat ${seat.seatNumber + 1}`}
+			label={roleLabel ?? `Seat ${seatLabel(seat.seatNumber)}`}
 			isHighlighted={seat.role !== SeatRole.OTHER}
 			className={className}
 			style={style}

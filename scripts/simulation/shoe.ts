@@ -1,4 +1,5 @@
-import { Rank, RANKS } from '@/game/cards';
+import { cardFromScanCode } from '@/game/cards';
+import type { CardFace } from '@/game/cards';
 import { SHOE_SIZE, trueCount } from '@/strategy/betting';
 import { TABLE_RULES } from '@/strategy/rules';
 
@@ -17,14 +18,22 @@ export function seededRandom(seed: number): () => number {
 	};
 }
 
-function freshCards(): Rank[] {
-	const cards: Rank[] = [];
+// Scan codes name a card by its face, then its suit: "JH" is the jack of hearts.
+const FACE_CODES = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'J', 'Q', 'K'] as const;
+const SUIT_CODES = ['H', 'D', 'C', 'S'] as const;
 
-	for (const rank of RANKS) {
-		const copiesPerDeck = rank === Rank.TEN ? 16 : 4;
+function freshCards(): CardFace[] {
+	const cards: CardFace[] = [];
 
-		for (let copy = 0; copy < copiesPerDeck * TABLE_RULES.deckCount; copy += 1) {
-			cards.push(rank);
+	for (let deck = 0; deck < TABLE_RULES.deckCount; deck += 1) {
+		for (const face of FACE_CODES) {
+			for (const suit of SUIT_CODES) {
+				const card = cardFromScanCode(`${face}${suit}`);
+
+				if (card) {
+					cards.push(card);
+				}
+			}
 		}
 	}
 
@@ -36,7 +45,7 @@ const RESHUFFLE_AT_CARD = Math.round(SHOE_SIZE * TABLE_RULES.reshuffleShare);
 // An eight-deck shoe dealt to the cut card, then reshuffled before the next round.
 export class SimulatedShoe {
 	readonly #random: () => number;
-	#cards: Rank[] = [];
+	#cards: CardFace[] = [];
 	#dealt = 0;
 
 	constructor(random: () => number) {
@@ -46,7 +55,7 @@ export class SimulatedShoe {
 
 	// The true count as a counter sees it before the round: every card dealt since the shuffle.
 	get trueCount(): number {
-		return trueCount(this.#cards.slice(0, this.#dealt));
+		return trueCount(this.#cards.slice(0, this.#dealt).map(card => card.rank));
 	}
 
 	// The dealer only reshuffles between rounds, once the cut card has come out.
@@ -56,7 +65,7 @@ export class SimulatedShoe {
 		}
 	}
 
-	draw(): Rank {
+	draw(): CardFace {
 		const card = this.#cards[this.#dealt];
 
 		if (card === undefined) {

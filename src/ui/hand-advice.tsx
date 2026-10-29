@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import type { HandDecision } from '@/advisor/advisor-view';
+import { seatLabel } from '@/game/seats';
 import { cn } from '@/lib/utils';
 
 import { Caption } from './caption';
@@ -15,7 +16,7 @@ const MOVE_INFO =
 	'The move that wins the most money over time for these exact cards. The percentages are what each choice returns on your bet on average: +10% means you make 10 cents per dollar in the long run. Once the shoe is being counted, they account for the cards already played. Cash out is hidden when its quote is priced on a different bet than the one shown, which can happen when betting behind.';
 
 function handName(decision: HandDecision): string {
-	const seatName = `Seat ${decision.seatNumber + 1}`;
+	const seatName = `Seat ${seatLabel(decision.seatNumber)}`;
 
 	if (decision.isBetBehind) {
 		return decision.isSplitHand ? `Behind ${seatName}, hand ${decision.handIndex + 1}` : `Behind ${seatName}`;

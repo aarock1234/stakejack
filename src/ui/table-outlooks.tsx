@@ -2,18 +2,19 @@ import type { ReactElement } from 'react';
 
 import { SeatRole } from '@/advisor/outlook-view';
 import type { SeatOutlook } from '@/advisor/outlook-view';
+import { seatLabel } from '@/game/seats';
 
 import { HandStanding } from './hand-standing';
 import { ValueList } from './value-list';
 
-function seatLabel(seat: SeatOutlook): string {
+function rowLabel(seat: SeatOutlook): string {
 	switch (seat.role) {
 		case SeatRole.OWN:
 			return 'You';
 		case SeatRole.BEHIND:
-			return `Behind ${seat.seatNumber + 1}`;
+			return `Behind ${seatLabel(seat.seatNumber)}`;
 		case SeatRole.OTHER:
-			return `Seat ${seat.seatNumber + 1}`;
+			return `Seat ${seatLabel(seat.seatNumber)}`;
 	}
 }
 
@@ -29,7 +30,7 @@ export function TableOutlooks({ outlooks }: TableOutlooksProps): ReactElement {
 			<ValueList
 				rows={outlooks.map(seat => ({
 					key: String(seat.seatNumber),
-					label: seatLabel(seat),
+					label: rowLabel(seat),
 					value: (
 						<span className="inline-flex gap-3">
 							{seat.hands.map(standing => (

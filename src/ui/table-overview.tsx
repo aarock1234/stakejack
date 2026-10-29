@@ -5,6 +5,7 @@ import { Hourglass, Target } from 'lucide-react';
 import type { AdvisorView } from '@/advisor/advisor-view';
 import { SeatRole } from '@/advisor/outlook-view';
 import type { HandStanding as HandStandingValue, SeatOutlook } from '@/advisor/outlook-view';
+import { seatLabel } from '@/game/seats';
 
 import { Caption } from './caption';
 import { DealerOverview } from './dealer-outlook';
@@ -64,7 +65,7 @@ type PlayedSeatProps = {
 };
 
 function seatName(seat: SeatOutlook): string {
-	return seat.role === SeatRole.BEHIND ? `Behind seat ${seat.seatNumber + 1}` : 'Your hand';
+	return seat.role === SeatRole.BEHIND ? `Behind seat ${seatLabel(seat.seatNumber)}` : 'Your hand';
 }
 
 // A single hand gets the large treatment; split hands sit side by side.

@@ -78,11 +78,11 @@ function main(): void {
 		};
 
 		const bets = BETTORS.map(bettor => bettor.nextBet(start));
-		const seatProfits = playRound(shoe, strategy);
+		const seatOutcomes = playRound(shoe, strategy);
 
 		for (const [index, bettor] of BETTORS.entries()) {
 			const bet = bets[index];
-			const profit = bet ? (seatProfits[bet.seat] ?? 0) * bet.units : 0;
+			const profit = bet ? (seatOutcomes[bet.seat]?.main ?? 0) * bet.units : 0;
 
 			tallies[index]?.noteRound(bet?.units ?? 0, profit);
 

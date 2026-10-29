@@ -1,4 +1,4 @@
-import { SEAT_COUNT } from './round';
+import { SEAT_COUNT, seatLabel } from '@/game/seats';
 
 // Where a bettor's money goes for the coming round.
 export type Bet = {
@@ -20,9 +20,9 @@ export type Bettor = {
 	noteResult(profit: number): void;
 };
 
-// Seat names as players see them, numbered from 1 at the left of the table.
+// Seat names as the table labels them.
 function seatName(seat: number): string {
-	return `seat ${seat + 1}`;
+	return `seat ${seatLabel(seat)}`;
 }
 
 function nextSeat(seat: number): number {

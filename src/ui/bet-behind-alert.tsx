@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import type { BetBehindAdvice, BetBehindSeat } from '@/advisor/bet-behind-view';
+import { seatLabel } from '@/game/seats';
 import { cn } from '@/lib/utils';
 
 import { formatShare } from './format';
@@ -13,7 +14,7 @@ type BetBehindPickProps = {
 function BetBehindPick({ seat }: BetBehindPickProps): ReactElement {
 	return (
 		<p className="pl-4 text-xs text-muted-foreground">
-			<span className="font-medium text-foreground">Seat {seat.seatNumber + 1}</span> follows the book{' '}
+			<span className="font-medium text-foreground">Seat {seatLabel(seat.seatNumber)}</span> follows the book{' '}
 			{formatShare(seat.shareByTheBook)} of {seat.movesSeen} moves
 		</p>
 	);

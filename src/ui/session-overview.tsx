@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 
 import type { MoveReview, SeatResult, SessionSummary } from '@/advisor/session-tracker';
+import { seatLabel } from '@/game/seats';
 
 import { Caption } from './caption';
 import { formatMoney, formatMoneyChange } from './format';
@@ -70,7 +71,7 @@ const SEAT_INFO =
 function seatRows(bySeat: readonly SeatResult[], currency: string): ValueRow[] {
 	return bySeat.map(seat => ({
 		key: String(seat.seatNumber),
-		label: `Seat ${seat.seatNumber + 1}, ${seat.roundsPlayed} ${seat.roundsPlayed === 1 ? 'round' : 'rounds'}`,
+		label: `Seat ${seatLabel(seat.seatNumber)}, ${seat.roundsPlayed} ${seat.roundsPlayed === 1 ? 'round' : 'rounds'}`,
 		value: formatMoneyChange(seat.net, currency),
 		tone: moneyTone(seat.net),
 	}));

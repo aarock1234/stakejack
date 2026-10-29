@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { ArrowRightLeft } from 'lucide-react';
 
 import type { SeatSuggestion } from '@/advisor/seat-advice';
+import { seatLabel } from '@/game/seats';
 
 import { Caption } from './caption';
 
@@ -20,7 +21,7 @@ export function SeatSuggestionNote({ suggestion }: SeatSuggestionNoteProps): Rea
 			<Caption info={SEAT_INFO}>Better seat open</Caption>
 			<p className="flex items-center gap-2 text-sm">
 				<ArrowRightLeft aria-hidden className="size-4 text-muted-foreground" />
-				<span className="font-medium">Move to seat {suggestion.seatNumber + 1}</span>
+				<span className="font-medium">Move to seat {seatLabel(suggestion.seatNumber)}</span>
 				<span className="text-muted-foreground">to act later</span>
 			</p>
 		</section>
