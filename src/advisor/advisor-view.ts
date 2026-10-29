@@ -8,8 +8,11 @@ import type { Action, DecisionSituation, HandAdvice, InsuranceAdvice } from '@/s
 import { adviseBet } from '@/strategy/betting';
 import type { BetAdvice } from '@/strategy/betting';
 
+import { describeBetBehind } from './bet-behind-view';
+import type { BetBehindAdvice } from './bet-behind-view';
 import { describeDealer, describeOutlooks } from './outlook-view';
 import type { DealerOutlook, SeatOutlook, SeatRoles } from './outlook-view';
+import type { PlayerRecords } from './player-review';
 import { suggestSeat } from './seat-advice';
 import type { SeatSuggestion } from './seat-advice';
 import { EMPTY_SESSION } from './session-tracker';
@@ -55,6 +58,7 @@ export type AdvisorView = {
 	session: SessionSummary;
 	shoe: ShoeSummary;
 	bet?: BetRecommendation;
+	betBehind?: BetBehindAdvice;
 	insurance?: InsuranceAdvice;
 	decisions: readonly HandDecision[];
 	outlooks: readonly SeatOutlook[];
@@ -225,7 +229,13 @@ function describePlayedSeats(roles: SeatRoles): PlayedSeat[] {
 	return [...owned, ...behind];
 }
 
-export function describeTable(table: TableTracker, session: SessionSummary): AdvisorView {
+// What the advisor has learned over the session, beyond the table as it stands.
+export type AdvisorHistory = {
+	session: SessionSummary;
+	players: PlayerRecords;
+};
+
+export function describeTable(table: TableTracker, history: AdvisorHistory): AdvisorView {
 	if (!table.hasGameTraffic) {
 		return CONNECTING_VIEW;
 	}
@@ -240,9 +250,10 @@ export function describeTable(table: TableTracker, session: SessionSummary): Adv
 	// What every view shares, seated or not.
 	const tableView = {
 		wallet: table.wallet,
-		session,
+		session: history.session,
 		shoe: describeShoe(table),
 		bet: describeBet(table),
+		betBehind: describeBetBehind(table, history.players),
 		outlooks: describeOutlooks(table, roles),
 		dealer: describeDealer(table),
 	};

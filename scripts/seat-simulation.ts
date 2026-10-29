@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { BasicStrategy } from './simulation/basic-strategy';
+import { BookStrategy } from '@/strategy/book-strategy';
+
 import {
 	bettingBehindFrom,
 	movingAfter,
@@ -65,7 +66,7 @@ function main(): void {
 	const rounds = roundsSchema.parse(process.argv[2]);
 	const random = seededRandom(SEED);
 	const shoe = new SimulatedShoe(random);
-	const strategy = new BasicStrategy();
+	const strategy = new BookStrategy();
 	const tallies = BETTORS.map(() => new Tally());
 
 	for (let round = 0; round < rounds; round += 1) {

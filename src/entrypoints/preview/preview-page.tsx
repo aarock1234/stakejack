@@ -11,8 +11,8 @@ import type { PreviewSample } from './sample-views';
 // Stacks for the capture layout, paired so the three columns already end within a few pixels of each other.
 // The last panel in each column stretches to close the rest, so the image is an even rectangle.
 const CAPTURE_COLUMNS: readonly (readonly SampleId[])[] = [
-	[SampleId.MOVE, SampleId.BETTING],
-	[SampleId.SPLIT, SampleId.INSURANCE],
+	[SampleId.MOVE, SampleId.SPLIT],
+	[SampleId.BETTING, SampleId.INSURANCE, SampleId.WATCHING],
 	[SampleId.OVERVIEW],
 ];
 

@@ -50,24 +50,8 @@ function edgeStat(shoe: ShoeSummary): Stat {
 	};
 }
 
-// The count has tipped the game the player's way: shown even while the panel is minimised.
-function CountAlert(): ReactElement {
-	return (
-		<p role="status" className="flex items-center gap-2 border-t border-border-faint px-4 py-2.5 text-sm">
-			<span aria-hidden className="size-2 shrink-0 rounded-full bg-outcome-win" />
-			<span className="font-medium text-outcome-win">The count favours you</span>
-			<span className="text-muted-foreground">Bet bigger</span>
-		</p>
-	);
-}
-
 // Always visible: where the true count stands and who holds the edge on the next hand. Without a count
 // the edge is the table's base house edge; with one it is adjusted for the cards left.
 export function ShoeStrip({ shoe }: ShoeStripProps): ReactElement {
-	return (
-		<>
-			<StatGrid stats={[countStat(shoe), edgeStat(shoe)]} className="border-t border-border-faint px-4 py-3" />
-			{isFavourable(shoe) && <CountAlert />}
-		</>
-	);
+	return <StatGrid stats={[countStat(shoe), edgeStat(shoe)]} className="border-t border-border-faint px-4 py-3" />;
 }

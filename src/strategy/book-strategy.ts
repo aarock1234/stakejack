@@ -1,7 +1,7 @@
 import { handPoints } from '@/game/cards';
 import type { Rank } from '@/game/cards';
-import { adviseHand } from '@/strategy/advice';
-import type { Action } from '@/strategy/advice';
+import { adviseHand } from './advice';
+import type { Action } from './advice';
 
 export type PlaySituation = {
 	cards: readonly Rank[];
@@ -13,7 +13,7 @@ export type PlaySituation = {
 // Book strategy for the table rules, worked out by the extension's own engine the first time each
 // situation comes up and remembered after that. Hands with the same total, softness, and options play
 // alike, which is what a printed strategy card assumes too.
-export class BasicStrategy {
+export class BookStrategy {
 	readonly #moves = new Map<string, Action>();
 
 	moveFor(situation: PlaySituation): Action {

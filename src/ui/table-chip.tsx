@@ -2,6 +2,8 @@ import type { CSSProperties, ReactElement, ReactNode } from 'react';
 
 import { cn } from '@/lib/utils';
 
+import type { TablePoint } from './use-table-anchors';
+
 type TableChipProps = {
 	label: string;
 	// Marks a chip that rides on the player's money.
@@ -29,5 +31,30 @@ export function TableChip({ label, isHighlighted = false, className, style, chil
 		>
 			{children}
 		</div>
+	);
+}
+
+type SeatHintChipProps = {
+	anchor: TablePoint;
+	// What to do at the seat, such as "Sit here", and why, in a few words.
+	title: string;
+	detail: string;
+};
+
+// A chip resting on a seat's bet spot that points the player to it, so the seat is easy to find.
+export function SeatHintChip({ anchor, title, detail }: SeatHintChipProps): ReactElement {
+	return (
+		<TableChip
+			label={title}
+			isHighlighted
+			className="fixed z-2147483647 -translate-x-1/2 -translate-y-full"
+			style={{
+				left: anchor.x,
+				top: anchor.y,
+			}}
+		>
+			<span className="text-xs font-medium text-outcome-win">{title}</span>
+			<span className="text-micro text-muted-foreground">{detail}</span>
+		</TableChip>
 	);
 }

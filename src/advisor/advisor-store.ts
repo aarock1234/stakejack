@@ -8,6 +8,7 @@ import { TableTracker } from '@/game/table-tracker';
 
 import { CONNECTING_VIEW, describeTable } from './advisor-view';
 import type { AdvisorView } from './advisor-view';
+import { PlayerReview } from './player-review';
 import { SessionTracker } from './session-tracker';
 import type { ShoeHistory } from './shoe-history';
 import { currentEdge } from './shoe-view';
@@ -23,6 +24,7 @@ const SHOE_SAVE_INTERVAL_MS = 5 * 1000;
 export class AdvisorStore {
 	readonly #table = new TableTracker();
 	readonly #session = new SessionTracker();
+	readonly #players = new PlayerReview();
 	readonly #listeners = new Set<Listener>();
 	readonly #history: ShoeHistory | undefined;
 	#view: AdvisorView = CONNECTING_VIEW;
@@ -106,8 +108,35 @@ export class AdvisorStore {
 
 		this.#table.receive(message);
 		this.#followSession(message);
+		this.#followOtherPlayers(message);
 
 		return true;
+	}
+
+	// Judges the moves of everyone else at the table, to know whose hand is worth betting behind.
+	#followOtherPlayers(message: GameMessage): void {
+		if (message.kind === MessageKind.BETS_OPENED) {
+			this.#players.startRound();
+			return;
+		}
+
+		if (message.kind !== MessageKind.SEAT_HANDS || this.#table.ownSeats().includes(message.seatNumber)) {
+			return;
+		}
+
+		const ownerId = this.#table.ownerOf(message.seatNumber);
+		const [dealerUpCard] = this.#table.dealerCards();
+
+		if (ownerId === undefined || dealerUpCard === undefined) {
+			return;
+		}
+
+		this.#players.noteSeat({
+			seatNumber: message.seatNumber,
+			ownerId,
+			hands: message.hands,
+			dealerUpCard,
+		});
 	}
 
 	// Feeds the session the player's own bets, payouts, and moves.
@@ -237,7 +266,10 @@ export class AdvisorStore {
 
 	// Works out the view, and remembers the advice in it so the player's next moves can be compared.
 	#describe(): AdvisorView {
-		const view = describeTable(this.#table, this.#session.summary);
+		const view = describeTable(this.#table, {
+			session: this.#session.summary,
+			players: this.#players.records,
+		});
 
 		this.#session.noteOfferedAdvice(view.decisions, seatNumber => this.#table.mainBetAt(seatNumber));
 

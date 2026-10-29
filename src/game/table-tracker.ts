@@ -176,6 +176,11 @@ export class TableTracker {
 		return this.#hands.get(seatNumber) ?? [];
 	}
 
+	// The user id of whoever sits at a seat, once they have sat down or bet there.
+	ownerOf(seatNumber: number): string | undefined {
+		return this.#seatOwners.get(seatNumber);
+	}
+
 	// Seats someone is known to sit at: announced, betting, or holding cards this round.
 	occupiedSeats(): ReadonlySet<number> {
 		return new Set([...this.#seatOwners.keys(), ...this.#mainBets.keys(), ...this.seatsInPlay()]);

@@ -11,6 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 import { BetAdvice } from './bet-advice';
+import { BetBehindAlert } from './bet-behind-alert';
 import { formatMoney } from './format';
 import { HandAdvice } from './hand-advice';
 import { InsuranceAdvice } from './insurance-advice';
@@ -151,6 +152,7 @@ export function PanelCard({
 			</CardHeader>
 
 			{!isConnecting && <ShoeStrip shoe={view.shoe} />}
+			{view.betBehind && <BetBehindAlert advice={view.betBehind} />}
 			{!isConnecting && <OwnSideBetWins outlooks={view.outlooks} wallet={view.wallet} />}
 			{view.wallet && view.session.lastRound && (
 				<RoundResultStrip round={view.session.lastRound} currency={view.wallet.currency} />

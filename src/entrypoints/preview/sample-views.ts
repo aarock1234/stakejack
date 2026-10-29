@@ -222,7 +222,8 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		view: {
 			status: AdvisorStatus.SEATED,
 			wallet: WALLET,
-			session: SESSION,
+			// The first round of a session, so there is no last round to show yet.
+			session: EMPTY_SESSION,
 			shoe: TRACKED_SHOE,
 			decisions: [
 				decision({
@@ -293,6 +294,16 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 			outlooks: [],
 			seatSuggestion: {
 				seatNumber: 0,
+			},
+			betBehind: {
+				isWorthBetting: true,
+				hasOwnSeat: true,
+				isBettingOpen: true,
+				seat: {
+					seatNumber: 4,
+					movesSeen: 25,
+					shareByTheBook: 0.96,
+				},
 			},
 		},
 	},

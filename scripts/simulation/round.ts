@@ -1,8 +1,8 @@
 import { bestTotal, handPoints, isBust, isNatural, Rank } from '@/game/cards';
 import type { HandPoints } from '@/game/cards';
 import { Action } from '@/strategy/advice';
+import type { BookStrategy } from '@/strategy/book-strategy';
 
-import type { BasicStrategy } from './basic-strategy';
 import type { SimulatedShoe } from './shoe';
 
 // Seats are numbered from 0 at the left of the table as players see it. Cards go out from the highest
@@ -29,7 +29,7 @@ type DealerHand = {
 
 type RoundTable = {
 	shoe: SimulatedShoe;
-	strategy: BasicStrategy;
+	strategy: BookStrategy;
 	dealerUpCard: Rank;
 };
 
@@ -186,7 +186,7 @@ function dealStartingCards(shoe: SimulatedShoe): {
 
 // Plays one round with every seat taken and every player on book strategy. Returns each seat's profit, in
 // units of a one-unit main bet, indexed by seat number.
-export function playRound(shoe: SimulatedShoe, strategy: BasicStrategy): number[] {
+export function playRound(shoe: SimulatedShoe, strategy: BookStrategy): number[] {
 	const { seatCards, dealerUpCard } = dealStartingCards(shoe);
 
 	// Behind an ace the dealer checks the hole card first, and a blackjack ends the round there.

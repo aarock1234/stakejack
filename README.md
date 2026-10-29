@@ -39,6 +39,8 @@ Once it has seen a shoe from the first card, it keeps a Hi-Lo count, adjusts pla
 
 Bets behind another player get their own advice, and cash out is compared against that player's stake. A cash out quote that can't be matched to the bet it was priced on is left out rather than shown as a huge gain.
 
+A bet behind needs no seat, so you can watch every round and only bet when the count gives you the edge. The window says "Bet behind now" when it does and "Sit this round out" when it doesn't, and names the player whose moves have followed book strategy most closely, since a bet behind rides on their decisions. `pnpm tsx scripts/seat-simulation.ts` deals millions of rounds of these rules: betting every round loses about 0.6% from any seat, however you swap, while betting behind only when the true count is +1 or higher wins about 0.4%, and +2 or higher about 0.8%.
+
 ## Releasing
 
 Firefox installs keep themselves up to date: the add-on checks `updates.json` on the latest GitHub release about once a day and installs any newer signed version it lists. To publish a version:

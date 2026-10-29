@@ -1,11 +1,11 @@
 import { BetKind } from '@/game/bets';
 import type { PlacedBet } from '@/game/bets';
-import { PlayerMove } from '@/game/messages';
 import type { Hand } from '@/game/messages';
-import { Action } from '@/strategy/advice';
+import type { Action } from '@/strategy/advice';
 import { SIDE_BET_RETURNS } from '@/strategy/betting';
 
 import type { HandDecision } from './advisor-view';
+import { actionOf } from './player-moves';
 
 // How closely the player's own moves followed the advice.
 export type MoveReview = {
@@ -66,14 +66,6 @@ type Stake = {
 type OfferedAdvice = {
 	decision: HandDecision;
 	stake: number | undefined;
-};
-
-const ACTIONS_BY_MOVE: Readonly<Record<PlayerMove, Action>> = {
-	[PlayerMove.HIT]: Action.HIT,
-	[PlayerMove.STAND]: Action.STAND,
-	[PlayerMove.DOUBLE]: Action.DOUBLE,
-	[PlayerMove.SPLIT]: Action.SPLIT,
-	[PlayerMove.CASH_OUT]: Action.CASH_OUT,
 };
 
 // Hands and bets on the table are told apart by seat, and by hand once a pair is split.
@@ -230,7 +222,7 @@ export class SessionTracker {
 			}
 
 			this.#offeredAdvice.delete(key);
-			this.#reviewMove(offered, ACTIONS_BY_MOVE[hand.madeMove]);
+			this.#reviewMove(offered, actionOf(hand.madeMove));
 		}
 	}
 
