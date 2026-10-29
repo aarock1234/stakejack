@@ -8,10 +8,11 @@ import { SeatOutlookChip } from '@/ui/seat-outlooks';
 import { PREVIEW_DEALER, PREVIEW_SAMPLES, PREVIEW_SEATS, SampleId } from './sample-views';
 import type { PreviewSample } from './sample-views';
 
-// Stacks for the capture layout, balanced by hand so the three columns end at similar heights.
+// Stacks for the capture layout, paired so the three columns already end within a few pixels of each other.
+// The last panel in each column stretches to close the rest, so the image is an even rectangle.
 const CAPTURE_COLUMNS: readonly (readonly SampleId[])[] = [
-	[SampleId.MOVE, SampleId.BETTING, SampleId.INSURANCE],
-	[SampleId.SPLIT],
+	[SampleId.MOVE, SampleId.BETTING],
+	[SampleId.SPLIT, SampleId.INSURANCE],
 	[SampleId.OVERVIEW],
 ];
 
@@ -51,9 +52,36 @@ function MinimisedSample(): ReactElement | null {
 	);
 }
 
-// Just the panels on a transparent background, evenly spaced, for the README image. Panels are made opaque
-// and their shadows tightened, since there is no table behind them. The layout reports its own size on the
-// document so the screenshot can be cropped to it.
+type CaptureColumnProps = {
+	sampleIds: readonly SampleId[];
+};
+
+// One column of panels, stretched to the height of the tallest column.
+function CaptureColumn({ sampleIds }: CaptureColumnProps): ReactElement {
+	return (
+		<div className="flex flex-col gap-6">
+			{sampleIds.map(id => {
+				const sample = findSample(id);
+
+				return (
+					sample && (
+						<PanelCard
+							key={id}
+							view={sample.view}
+							unanchoredOutlooks={[]}
+							className="shadow-[0_6px_16px_-6px_rgb(0_0_0/40%)] last:flex-1"
+						/>
+					)
+				);
+			})}
+		</div>
+	);
+}
+
+// The panels and table chips on a transparent background for the README image: three columns of panels
+// with equal bottoms, and the chips centred in a row beneath them. Panels are made opaque and their shadows
+// tightened, since there is no table behind them. The layout reports its own size on the document so the
+// screenshot can be cropped to it.
 function CaptureLayout(): ReactElement {
 	const layout = useRef<HTMLDivElement>(null);
 
@@ -66,29 +94,16 @@ function CaptureLayout(): ReactElement {
 	});
 
 	return (
-		<div
-			ref={layout}
-			className="inline-flex items-start gap-6 p-6 font-sans text-foreground [--card:oklch(0.165_0.002_260)]"
-		>
-			{CAPTURE_COLUMNS.map((column, columnIndex) => (
-				<div key={columnIndex} className="flex flex-col gap-6">
-					{column.map(id => {
-						const sample = findSample(id);
+		<div ref={layout} className="inline-flex flex-col gap-6 p-6 font-sans text-foreground [--card:#0a0a0a]">
+			<div className="grid grid-cols-3 gap-6">
+				{CAPTURE_COLUMNS.map(column => (
+					<CaptureColumn key={column.join()} sampleIds={column} />
+				))}
+			</div>
 
-						return (
-							sample && (
-								<PanelCard
-									key={id}
-									view={sample.view}
-									unanchoredOutlooks={[]}
-									className="shadow-[0_6px_16px_-6px_oklch(0_0_0/40%)]"
-								/>
-							)
-						);
-					})}
-					{columnIndex === 1 && <SeatChips />}
-				</div>
-			))}
+			<div className="flex justify-center">
+				<SeatChips />
+			</div>
 		</div>
 	);
 }
