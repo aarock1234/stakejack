@@ -11,7 +11,7 @@ import { ShoeTracker } from './shoe-tracker';
 
 const DEALER_SEAT = -1;
 
-const NO_SIDE_BETS: ReadonlySet<BetKind> = new Set();
+const NO_SIDE_BETS: ReadonlyMap<BetKind, number> = new Map();
 
 // Follows one table: who sits where, the current round's hands and main bets, the shoe, the betting
 // window, and the player's wallet. The player is identified from their wallet or their own outgoing
@@ -30,7 +30,7 @@ export class TableTracker {
 	readonly #seatOwners = new Map<number, string>();
 	readonly #playerSeats = new Set<number>();
 	readonly #mainBets = new Map<number, number>();
-	readonly #sideBets = new Map<number, Set<BetKind>>();
+	readonly #sideBets = new Map<number, Map<BetKind, number>>();
 	readonly #ownBetsBehind = new Map<number, number>();
 	readonly #hands = new Map<number, readonly Hand[]>();
 
@@ -193,8 +193,8 @@ export class TableTracker {
 		return this.#mainBets.get(seatNumber);
 	}
 
-	// The side bets placed on a seat this round, by anyone sitting there.
-	sideBetsAt(seatNumber: number): ReadonlySet<BetKind> {
+	// The stake on each side bet placed on a seat this round, by whoever sits there.
+	sideBetsAt(seatNumber: number): ReadonlyMap<BetKind, number> {
 		return this.#sideBets.get(seatNumber) ?? NO_SIDE_BETS;
 	}
 
@@ -242,15 +242,15 @@ export class TableTracker {
 	}
 
 	#recordSideBet(bet: PlacedBet): void {
-		const bets = this.#sideBets.get(bet.seatNumber) ?? new Set<BetKind>();
+		const stakes = this.#sideBets.get(bet.seatNumber) ?? new Map<BetKind, number>();
 
 		if (bet.amount > 0) {
-			bets.add(bet.kind);
+			stakes.set(bet.kind, bet.amount);
 		} else {
-			bets.delete(bet.kind);
+			stakes.delete(bet.kind);
 		}
 
-		this.#sideBets.set(bet.seatNumber, bets);
+		this.#sideBets.set(bet.seatNumber, stakes);
 	}
 
 	#recordBetBehind(bet: PlacedBet): void {

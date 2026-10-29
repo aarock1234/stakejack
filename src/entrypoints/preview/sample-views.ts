@@ -52,6 +52,11 @@ const TRACKED_SHOE: ShoeSummary = {
 };
 
 const SESSION: SessionSummary = {
+	lastRound: {
+		wagered: 17,
+		paid: 102,
+		net: 85,
+	},
 	roundsPlayed: 18,
 	wagered: 212,
 	net: 42.5,
@@ -124,8 +129,21 @@ const DEALER_ON_SIXTEEN = dealerOutlook(
 	[Rank.TEN, Rank.NINE, Rank.TEN, Rank.SEVEN, Rank.SIX, Rank.TEN]
 );
 
-// A king and nine of hearts under the dealer's six of hearts: a 21+3 flush.
-const OWN_CARDS = [card('KH1'), card('9H2')];
+// A standing 20 against the same dealer.
+const TWENTY_AGAINST_SIXTEEN = handOutlook({
+	playerCards: [Rank.TEN, Rank.TEN],
+	dealerCards: [Rank.SIX, Rank.TEN],
+	isSplitHand: false,
+	cardsOut: [Rank.TEN, Rank.TEN, Rank.SIX, Rank.TEN],
+});
+
+// Two kings of hearts under the dealer's six of hearts: a perfect pair and a 21+3 flush at once.
+const OWN_CARDS = [card('KH1'), card('KH2')];
+
+const OWN_SIDE_BET_STAKES = new Map([
+	[BetKind.PERFECT_PAIRS, 2],
+	[BetKind.TWENTY_ONE_PLUS_THREE, 5],
+]);
 
 const OWN_OUTLOOK: SeatOutlook = {
 	seatNumber: 3,
@@ -134,17 +152,17 @@ const OWN_OUTLOOK: SeatOutlook = {
 		{
 			handIndex: 0,
 			cards: OWN_CARDS,
-			total: 19,
+			total: 20,
 			isSoft: false,
 			isBust: false,
 			isInPlay: false,
-			outlook: NINETEEN_AGAINST_SIXTEEN,
+			outlook: TWENTY_AGAINST_SIXTEEN,
 		},
 	],
 	sideBetWins: sideBetWins({
 		startingCards: OWN_CARDS,
 		dealerUpCard: card('6H1'),
-		bets: new Set([BetKind.TWENTY_ONE_PLUS_THREE]),
+		stakes: OWN_SIDE_BET_STAKES,
 	}),
 };
 
@@ -360,7 +378,7 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 		],
 		sideBetWins: sideBetWins({
 			startingCards: PAIRED_CARDS,
-			bets: new Set([BetKind.PERFECT_PAIRS]),
+			stakes: new Map([[BetKind.PERFECT_PAIRS, 2]]),
 		}),
 	},
 	BEHIND_OUTLOOK,

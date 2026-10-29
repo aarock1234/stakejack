@@ -23,15 +23,43 @@ export const PokerHand = {
 
 export type PokerHand = (typeof PokerHand)[keyof typeof PokerHand];
 
-export type SideBetWin =
-	| {
-			bet: typeof BetKind.PERFECT_PAIRS;
-			hand: PairHand;
-	  }
-	| {
-			bet: typeof BetKind.TWENTY_ONE_PLUS_THREE;
-			hand: PokerHand;
-	  };
+// Pragmatic Play's pay tables for both side bets, as winnings to one.
+const PAIR_PAYOUTS: Readonly<Record<PairHand, number>> = {
+	[PairHand.PERFECT]: 25,
+	[PairHand.COLOURED]: 12,
+	[PairHand.MIXED]: 6,
+};
+
+const POKER_PAYOUTS: Readonly<Record<PokerHand, number>> = {
+	[PokerHand.SUITED_TRIPS]: 100,
+	[PokerHand.STRAIGHT_FLUSH]: 40,
+	[PokerHand.THREE_OF_A_KIND]: 30,
+	[PokerHand.STRAIGHT]: 10,
+	[PokerHand.FLUSH]: 5,
+};
+
+type SideBetPayout = {
+	// Winnings to one: 5 means a flush wins five times the stake, which is returned on top.
+	payout: number;
+	stake: number;
+};
+
+export type SideBetWin = SideBetPayout &
+	(
+		| {
+				bet: typeof BetKind.PERFECT_PAIRS;
+				hand: PairHand;
+		  }
+		| {
+				bet: typeof BetKind.TWENTY_ONE_PLUS_THREE;
+				hand: PokerHand;
+		  }
+	);
+
+// What a winning side bet pays on top of its stake.
+export function sideBetWinnings(win: SideBetWin): number {
+	return win.stake * win.payout;
+}
 
 // Where each face falls in a straight. The ace plays low, and also high after a king.
 const FACE_ORDER: Readonly<Record<string, number>> = {
@@ -117,7 +145,8 @@ export type SideBetSituation = {
 	// The player's first two cards, as dealt before any split.
 	startingCards: readonly CardFace[];
 	dealerUpCard?: CardFace;
-	bets: ReadonlySet<BetKind>;
+	// The stake on each side bet placed on the seat.
+	stakes: ReadonlyMap<BetKind, number>;
 };
 
 // The side bets a seat has won, settled as soon as the cards they depend on are out.
@@ -130,20 +159,26 @@ export function sideBetWins(situation: SideBetSituation): SideBetWin[] {
 	}
 
 	const pair = pairHand(first, second);
+	const pairStake = situation.stakes.get(BetKind.PERFECT_PAIRS);
 
-	if (situation.bets.has(BetKind.PERFECT_PAIRS) && pair) {
+	if (pair && pairStake !== undefined) {
 		wins.push({
 			bet: BetKind.PERFECT_PAIRS,
 			hand: pair,
+			payout: PAIR_PAYOUTS[pair],
+			stake: pairStake,
 		});
 	}
 
 	const poker = situation.dealerUpCard ? pokerHand([first, second, situation.dealerUpCard]) : undefined;
+	const pokerStake = situation.stakes.get(BetKind.TWENTY_ONE_PLUS_THREE);
 
-	if (situation.bets.has(BetKind.TWENTY_ONE_PLUS_THREE) && poker) {
+	if (poker && pokerStake !== undefined) {
 		wins.push({
 			bet: BetKind.TWENTY_ONE_PLUS_THREE,
 			hand: poker,
+			payout: POKER_PAYOUTS[poker],
+			stake: pokerStake,
 		});
 	}
 

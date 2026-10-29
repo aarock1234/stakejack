@@ -137,7 +137,7 @@ export function describeOutlooks(table: TableTracker, roles: SeatRoles): SeatOut
 				sideBetWins: sideBetWins({
 					startingCards: table.startingCardsAt(seatNumber),
 					dealerUpCard,
-					bets: table.sideBetsAt(seatNumber),
+					stakes: table.sideBetsAt(seatNumber),
 				}),
 			});
 		}

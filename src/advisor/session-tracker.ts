@@ -15,8 +15,17 @@ export type MoveReview = {
 	cost: number;
 };
 
+// One settled round the player bet on: everything staked, everything paid back, and the difference.
+export type RoundResult = {
+	wagered: number;
+	paid: number;
+	net: number;
+};
+
 // Everything bet and won since the table opened in this window.
 export type SessionSummary = {
+	// The most recent round the player bet on, once it has been paid.
+	lastRound?: RoundResult;
 	roundsPlayed: number;
 	wagered: number;
 	net: number;
@@ -140,12 +149,18 @@ export class SessionTracker {
 
 		const wagered = sumOf(stakes.values(), stake => stake.amount);
 		const expected = sumOf(stakes.values(), stake => stake.expectedValue);
+		const net = amount - wagered;
 
 		this.#summary = {
 			...this.#summary,
+			lastRound: {
+				wagered,
+				paid: amount,
+				net,
+			},
 			roundsPlayed: this.#summary.roundsPlayed + 1,
 			wagered: this.#summary.wagered + wagered,
-			net: this.#summary.net + amount - wagered,
+			net: this.#summary.net + net,
 			expected: this.#summary.expected + expected,
 		};
 	}
