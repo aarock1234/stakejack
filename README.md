@@ -25,7 +25,7 @@ pnpm install
 pnpm build:all
 ```
 
-In Chrome, open `chrome://extensions`, turn on developer mode, choose Load unpacked and pick `.output/chrome-mv3`. In Firefox, open `about:debugging#/runtime/this-firefox` and load `.output/firefox-mv3/manifest.json` as a temporary add-on. Regular Firefox only keeps signed add-ons, so for a permanent install run `pnpm sign:firefox` with your addons.mozilla.org API key in `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET`.
+In Chrome, open `chrome://extensions`, turn on developer mode, choose Load unpacked and pick `.output/chrome-mv3`. In Firefox, open `about:debugging#/runtime/this-firefox` and load `.output/firefox-mv3/manifest.json` as a temporary add-on. Regular Firefox only keeps signed add-ons, so for a permanent install put your addons.mozilla.org API key in a `.env` file as `WEB_EXT_API_KEY` and `WEB_EXT_API_SECRET`, then run `pnpm sign:firefox`.
 
 Reload the blackjack table after installing and the panel shows up in the game.
 

@@ -16,7 +16,7 @@
 		"build:all": "pnpm build && pnpm build:firefox",
 		"zip": "wxt zip",
 		"zip:firefox": "wxt zip -b firefox --mv3",
-		"sign:firefox": "pnpm build:firefox && pnpm dlx web-ext sign --channel=unlisted --source-dir .output/firefox-mv3 --artifacts-dir .output",
+		"sign:firefox": "pnpm build:firefox && tsx scripts/sign-firefox.ts",
 		"postinstall": "wxt prepare",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint .",
