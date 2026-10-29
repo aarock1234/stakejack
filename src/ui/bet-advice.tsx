@@ -18,7 +18,7 @@ type BetAdviceProps = {
 // The count and edge behind this amount sit in the panel header.
 export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 	if (!bet.canAffordMinimum) {
-		return <p className="text-sm text-muted-foreground">Your balance is below the table minimum.</p>;
+		return <p className="text-muted-foreground">Your balance is below the table minimum.</p>;
 	}
 
 	return (
@@ -27,26 +27,25 @@ export function BetAdvice({ bet, currency }: BetAdviceProps): ReactElement {
 				<Caption info="Bet the table minimum while the house has the edge. When the count swings in your favour, this grows to a small share of your balance, sized so a losing streak can't wipe you out. Side bets lose more than the main game, so skip them.">
 					{bet.isTableMinimum ? 'Next bet, table minimum' : 'Next bet'}
 				</Caption>
-				<Headline
-					icon={CircleDollarSign}
-					label={<span className="font-mono tabular-nums">{formatMoney(bet.amount, currency)}</span>}
-				/>
+				<Headline icon={CircleDollarSign} label={formatMoney(bet.amount, currency)} />
 			</div>
 
-			<ValueList
-				rows={[
-					{
-						key: 'perfect-pairs',
-						label: 'Skip Perfect Pairs',
-						value: formatPercent(SIDE_BET_RETURNS.perfectPairs - 1),
-					},
-					{
-						key: 'twenty-one-plus-three',
-						label: 'Skip 21+3',
-						value: formatPercent(SIDE_BET_RETURNS.twentyOnePlusThree - 1),
-					},
-				]}
-			/>
+			<div className="border-t border-border-faint pt-2">
+				<ValueList
+					rows={[
+						{
+							key: 'perfect-pairs',
+							label: 'Skip Perfect Pairs',
+							value: formatPercent(SIDE_BET_RETURNS.perfectPairs - 1),
+						},
+						{
+							key: 'twenty-one-plus-three',
+							label: 'Skip 21+3',
+							value: formatPercent(SIDE_BET_RETURNS.twentyOnePlusThree - 1),
+						},
+					]}
+				/>
+			</div>
 		</section>
 	);
 }

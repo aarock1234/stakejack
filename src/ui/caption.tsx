@@ -19,7 +19,7 @@ export function Caption({ children, info, className }: CaptionProps): ReactEleme
 
 	return (
 		<div className={cn('flex flex-col gap-1.5', className)}>
-			<div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+			<div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
 				<span className="truncate">{children}</span>
 				{info && (
 					<button
@@ -40,7 +40,7 @@ export function Caption({ children, info, className }: CaptionProps): ReactEleme
 			{info && isOpen && (
 				<p
 					id={infoId}
-					className="rounded-md bg-muted/60 px-2.5 py-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground"
+					className="rounded-md border border-border-faint bg-secondary px-2.5 py-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground"
 				>
 					{info}
 				</p>

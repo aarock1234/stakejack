@@ -10,9 +10,9 @@ import type { PreviewSample } from './sample-views';
 
 // Stacks for the capture layout, balanced by hand so the three columns end at similar heights.
 const CAPTURE_COLUMNS: readonly (readonly SampleId[])[] = [
-	[SampleId.MOVE, SampleId.INSURANCE],
+	[SampleId.MOVE, SampleId.BETTING, SampleId.INSURANCE],
 	[SampleId.SPLIT],
-	[SampleId.BETTING, SampleId.OVERVIEW],
+	[SampleId.OVERVIEW],
 ];
 
 function findSample(id: SampleId): PreviewSample | undefined {

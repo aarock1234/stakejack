@@ -1,5 +1,8 @@
 import type { ReactElement } from 'react';
 
+import { CircleCheck, CircleMinus, CircleX } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
 import type { HandStanding as HandStandingValue } from '@/advisor/outlook-view';
 import { cn } from '@/lib/utils';
 import type { HandOutlook } from '@/strategy/outlook';
@@ -8,7 +11,7 @@ import { formatHandTotal, formatShare } from './format';
 
 export type Verdict = {
 	label: string;
-	emoji: string;
+	icon: LucideIcon;
 	color: string;
 };
 
@@ -24,7 +27,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (standing.isBust) {
 		return {
 			label: 'Bust',
-			emoji: '💥',
+			icon: CircleX,
 			color: 'text-outcome-lose',
 		};
 	}
@@ -32,7 +35,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (isCertain(outlook.win)) {
 		return {
 			label: 'Win',
-			emoji: '🏆',
+			icon: CircleCheck,
 			color: 'text-outcome-win',
 		};
 	}
@@ -40,7 +43,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (isCertain(outlook.push)) {
 		return {
 			label: 'Push',
-			emoji: '🤝',
+			icon: CircleMinus,
 			color: 'text-muted-foreground',
 		};
 	}
@@ -48,7 +51,7 @@ export function settledVerdict(standing: HandStandingValue): Verdict | undefined
 	if (isCertain(outlook.lose)) {
 		return {
 			label: 'Lose',
-			emoji: '❌',
+			icon: CircleX,
 			color: 'text-outcome-lose',
 		};
 	}
@@ -60,28 +63,40 @@ type OutlookBarProps = {
 	outlook: HandOutlook;
 };
 
-// Hairline split of win, push, and lose, read left to right.
+// A thin bar split into win, push, and lose, read left to right, with a hairline gap between the parts.
 export function OutlookBar({ outlook }: OutlookBarProps): ReactElement {
+	const segments = [
+		{
+			key: 'win',
+			share: outlook.win,
+			color: 'bg-outcome-win',
+		},
+		{
+			key: 'push',
+			share: outlook.push,
+			color: 'bg-outcome-push',
+		},
+		{
+			key: 'lose',
+			share: outlook.lose,
+			color: 'bg-outcome-lose',
+		},
+	];
+
 	return (
-		<div aria-hidden className="flex h-0.5 w-full overflow-hidden rounded-full">
-			<span
-				className="bg-outcome-win"
-				style={{
-					flexGrow: outlook.win,
-				}}
-			/>
-			<span
-				className="bg-outcome-push"
-				style={{
-					flexGrow: outlook.push,
-				}}
-			/>
-			<span
-				className="bg-outcome-lose"
-				style={{
-					flexGrow: outlook.lose,
-				}}
-			/>
+		<div aria-hidden className="flex h-1 w-full gap-px overflow-hidden rounded-[2px]">
+			{segments
+				.filter(segment => segment.share > 0)
+				.map(segment => (
+					<span
+						key={segment.key}
+						className={segment.color}
+						style={{
+							flexGrow: segment.share,
+							minWidth: 2,
+						}}
+					/>
+				))}
 		</div>
 	);
 }
@@ -95,28 +110,28 @@ type HandStandingProps = {
 export function HandStanding({ standing }: HandStandingProps): ReactElement {
 	if (standing.isInPlay) {
 		return (
-			<span className="font-mono text-xs text-muted-foreground tabular-nums">
-				{formatHandTotal(standing.total, standing.isSoft)}
-			</span>
+			<span className="text-xs text-muted-foreground">{formatHandTotal(standing.total, standing.isSoft)}</span>
 		);
 	}
 
 	const verdict = settledVerdict(standing);
 
 	if (verdict) {
+		const Icon = verdict.icon;
+
 		return (
 			<span className={cn('flex items-center gap-1 text-xs font-medium', verdict.color)}>
-				<span aria-hidden>{verdict.emoji}</span>
+				<Icon aria-hidden className="size-3" strokeWidth={2.5} />
 				{verdict.label}
 			</span>
 		);
 	}
 
 	return (
-		<div className="flex min-w-10 flex-col gap-1">
-			<div className="flex items-baseline justify-between gap-1.5 font-mono text-xs tabular-nums">
+		<div className="flex min-w-12 flex-col gap-1">
+			<div className="flex items-baseline justify-between gap-2 text-xs">
 				<span className="text-muted-foreground">{standing.total}</span>
-				<span>{formatShare(standing.outlook.win)}</span>
+				<span className="font-medium">{formatShare(standing.outlook.win)}</span>
 			</div>
 			<OutlookBar outlook={standing.outlook} />
 		</div>

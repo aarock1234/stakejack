@@ -3,7 +3,8 @@ import type { ReactElement } from 'react';
 import type { ReshuffleEstimate, ShoeSummary } from '@/advisor/shoe-view';
 
 import { Caption } from './caption';
-import { formatCount, formatDecks, formatRunningCount } from './format';
+import { formatDecks, formatRunningCount } from './format';
+import { ValueList } from './value-list';
 
 // Shown behind the (i) on the shoe section.
 const SHOE_INFO = [
@@ -13,7 +14,6 @@ const SHOE_INFO = [
 ].join('\n\n');
 
 type CountedShoe = {
-	trueCount: number;
 	runningCount: number;
 	decksRemaining: number;
 	reshuffle: ReshuffleEstimate;
@@ -21,19 +21,13 @@ type CountedShoe = {
 };
 
 function countedShoe(shoe: ShoeSummary): CountedShoe | undefined {
-	const { trueCount, runningCount, decksRemaining, reshuffle } = shoe;
+	const { runningCount, decksRemaining, reshuffle } = shoe;
 
-	if (
-		trueCount === undefined ||
-		runningCount === undefined ||
-		decksRemaining === undefined ||
-		reshuffle === undefined
-	) {
+	if (runningCount === undefined || decksRemaining === undefined || reshuffle === undefined) {
 		return undefined;
 	}
 
 	return {
-		trueCount,
 		runningCount,
 		decksRemaining,
 		reshuffle,
@@ -41,55 +35,62 @@ function countedShoe(shoe: ShoeSummary): CountedShoe | undefined {
 	};
 }
 
-// "~13 rounds to reshuffle", or the cards left before a round has shown how many a round uses.
+// "~13 rounds", or the cards left before a round has shown how many a round uses.
 function reshuffleLabel(reshuffle: ReshuffleEstimate): string {
 	if (reshuffle.roundsLeft === undefined) {
-		return `~${reshuffle.cardsLeft} cards to reshuffle`;
+		return `~${reshuffle.cardsLeft} cards`;
 	}
 
 	const rounds = reshuffle.roundsLeft === 1 ? 'round' : 'rounds';
 
-	return `~${reshuffle.roundsLeft} ${rounds} to reshuffle`;
+	return `~${reshuffle.roundsLeft} ${rounds}`;
 }
 
 type CountedShoeProps = {
 	shoe: CountedShoe;
 };
 
-// How the true count is reached: the running count spread over the decks left.
-function CountWorking({ shoe }: CountedShoeProps): ReactElement {
+// How far through the shoe the dealer is, up to where the reshuffle is expected.
+function ReshuffleBar({ shoe }: CountedShoeProps): ReactElement {
+	const reshuffleAt = shoe.cardsDealt + shoe.reshuffle.cardsLeft;
+	const progress = reshuffleAt === 0 ? 0 : Math.min(shoe.cardsDealt / reshuffleAt, 1);
+
 	return (
-		<p className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-muted-foreground">
-			<span className="font-mono text-foreground tabular-nums">{formatRunningCount(shoe.runningCount)}</span>
-			running ÷<span className="font-mono text-foreground tabular-nums">{formatDecks(shoe.decksRemaining)}</span>
-			decks =<span className="font-mono text-foreground tabular-nums">{formatCount(shoe.trueCount)}</span>
-			true
-		</p>
+		<div aria-hidden className="h-1 overflow-hidden rounded-full bg-muted">
+			<div
+				className="h-full rounded-full bg-subtle"
+				style={{
+					width: `${progress * 100}%`,
+				}}
+			/>
+		</div>
 	);
 }
 
-// How far through the shoe the dealer is, up to where the reshuffle is expected.
-function ReshuffleProgress({ shoe }: CountedShoeProps): ReactElement {
-	const reshuffleAt = shoe.cardsDealt + shoe.reshuffle.cardsLeft;
-	const progress = reshuffleAt === 0 ? 0 : shoe.cardsDealt / reshuffleAt;
-
+function CountedShoeDetails({ shoe }: CountedShoeProps): ReactElement {
 	return (
-		<div className="flex flex-col gap-1.5">
-			<div aria-hidden className="h-1 overflow-hidden rounded-full bg-muted">
-				<div
-					className="h-full rounded-full bg-foreground/60"
-					style={{
-						width: `${Math.min(progress, 1) * 100}%`,
-					}}
-				/>
-			</div>
-			<div className="flex justify-between text-[11px] text-muted-foreground">
-				<span>
-					<span className="font-mono tabular-nums">{shoe.cardsDealt}</span> cards dealt
-				</span>
-				<span>{reshuffleLabel(shoe.reshuffle)}</span>
-			</div>
-		</div>
+		<>
+			<ValueList
+				rows={[
+					{
+						key: 'running',
+						label: 'Running count',
+						value: formatRunningCount(shoe.runningCount),
+					},
+					{
+						key: 'decks',
+						label: 'Decks left',
+						value: formatDecks(shoe.decksRemaining),
+					},
+					{
+						key: 'reshuffle',
+						label: 'Reshuffle in',
+						value: reshuffleLabel(shoe.reshuffle),
+					},
+				]}
+			/>
+			<ReshuffleBar shoe={shoe} />
+		</>
 	);
 }
 
@@ -97,23 +98,20 @@ type ShoeOverviewProps = {
 	shoe: ShoeSummary;
 };
 
-// The true count and edge already sit in the panel header; this shows how the count is reached and how
-// much of the shoe is left to play.
+// The true count and edge already sit in the panel header; this shows what they come from and how much of
+// the shoe is left to play.
 export function ShoeOverview({ shoe }: ShoeOverviewProps): ReactElement {
 	const counted = countedShoe(shoe);
 
 	return (
-		<div className="flex flex-col gap-2.5">
+		<section className="flex flex-col gap-2">
 			<Caption info={SHOE_INFO}>The shoe</Caption>
 
 			{counted ? (
-				<>
-					<CountWorking shoe={counted} />
-					<ReshuffleProgress shoe={counted} />
-				</>
+				<CountedShoeDetails shoe={counted} />
 			) : (
-				<p className="text-xs text-muted-foreground">Counting starts when the dealer opens a fresh shoe.</p>
+				<p className="text-sm text-muted-foreground">Counting starts when the dealer opens a fresh shoe.</p>
 			)}
-		</div>
+		</section>
 	);
 }

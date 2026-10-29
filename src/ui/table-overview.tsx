@@ -27,15 +27,8 @@ function PlayedHand({ name, standing }: PlayedHandProps): ReactElement {
 	if (standing.isInPlay) {
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">{name}, in play</p>
-				<Headline
-					icon={Hourglass}
-					label={
-						<span className="font-mono tabular-nums">
-							{formatHandTotal(standing.total, standing.isSoft)}
-						</span>
-					}
-				/>
+				<Caption>{name}, in play</Caption>
+				<Headline icon={Hourglass} label={formatHandTotal(standing.total, standing.isSoft)} />
 			</div>
 		);
 	}
@@ -43,26 +36,25 @@ function PlayedHand({ name, standing }: PlayedHandProps): ReactElement {
 	if (verdict) {
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">
+				<Caption>
 					{name}, {standing.total}
-				</p>
-				<Headline icon={verdict.emoji} label={verdict.label} textColor={verdict.color} />
+				</Caption>
+				<Headline icon={verdict.icon} label={verdict.label} textColor={verdict.color} />
 			</div>
 		);
 	}
 
 	return (
-		<div className="flex flex-col gap-3">
-			<div className="flex flex-col gap-2">
-				<Caption info="The hand is done, so this is the chance the dealer ends up below it or busts. It updates with every card the dealer draws.">
-					{name}, {standing.total}, chance to win
-				</Caption>
-				<Headline
-					icon={Target}
-					label={<span className="font-mono tabular-nums">{formatShare(standing.outlook.win)}</span>}
-				/>
-			</div>
+		<div className="flex flex-col gap-2">
+			<Caption info="The hand is done, so this is the chance the dealer ends up below it or busts. It updates with every card the dealer draws.">
+				{name}, {standing.total}
+			</Caption>
+			<Headline icon={Target} label={formatShare(standing.outlook.win)} detail="to win" />
 			<OutlookBar outlook={standing.outlook} />
+			<p className="flex justify-between text-micro text-muted-foreground">
+				<span>Push {formatShare(standing.outlook.push)}</span>
+				<span>Lose {formatShare(standing.outlook.lose)}</span>
+			</p>
 		</div>
 	);
 }
@@ -85,7 +77,7 @@ function PlayedSeat({ seat }: PlayedSeatProps): ReactElement {
 
 	return (
 		<div className="flex flex-col gap-2">
-			<p className="text-xs text-muted-foreground">{seatName(seat)}, split</p>
+			<Caption>{seatName(seat)}, split</Caption>
 			<div className="flex gap-4">
 				{seat.hands.map(standing => (
 					<HandStanding key={standing.handIndex} standing={standing} />
@@ -108,7 +100,7 @@ export function TableOverview({ view, isDealerOnTable }: TableOverviewProps): Re
 
 	// A hairline between each part keeps the hands, dealer, shoe, and session from running together.
 	return (
-		<section className="flex flex-col gap-4 [&>*+*]:border-t [&>*+*]:pt-4">
+		<section className="flex flex-col gap-4 [&>*+*]:border-t [&>*+*]:border-border-faint [&>*+*]:pt-4">
 			{playedSeats.map(seat => (
 				<PlayedSeat key={seat.seatNumber} seat={seat} />
 			))}

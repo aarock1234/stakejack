@@ -5,10 +5,9 @@ import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type HeadlineProps = {
-	// A Lucide icon, or an emoji for results.
-	icon: LucideIcon | string;
+	icon: LucideIcon;
 	label: ReactNode;
-	// A supporting number on the right, such as the move's expected value.
+	// A supporting figure on the right, such as the move's expected value.
 	detail?: ReactNode;
 	// Accent classes for the label and the icon tile; neutral when omitted.
 	textColor?: string;
@@ -21,17 +20,13 @@ export function Headline({ icon: Icon, label, detail, textColor, tileColor }: He
 		<div className="flex items-center gap-3">
 			<span
 				aria-hidden
-				className={cn('grid size-9 shrink-0 place-items-center rounded-xl', tileColor ?? 'bg-muted')}
+				className={cn('grid size-9 shrink-0 place-items-center rounded-lg', tileColor ?? 'bg-muted')}
 			>
-				{typeof Icon === 'string' ? (
-					<span className="text-base leading-none">{Icon}</span>
-				) : (
-					<Icon className={cn('size-4', textColor ?? 'text-foreground')} strokeWidth={2.25} />
-				)}
+				<Icon className={cn('size-4', textColor ?? 'text-foreground')} strokeWidth={2.25} />
 			</span>
 			<p className={cn('text-display', textColor)}>{label}</p>
 			{detail !== undefined && (
-				<span className="ml-auto font-mono text-sm text-muted-foreground tabular-nums">{detail}</span>
+				<span className="ml-auto text-sm font-medium text-muted-foreground">{detail}</span>
 			)}
 		</div>
 	);

@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactElement } from 'react';
 
 import type { DealerChance, DealerOutlook } from '@/advisor/outlook-view';
-import { cn } from '@/lib/utils';
 import { DealerResult } from '@/strategy/dealer';
 
 import { Caption } from './caption';
@@ -9,6 +8,7 @@ import { ChanceList } from './chance-list';
 import type { ChanceRow } from './chance-list';
 import { formatHandTotal, formatShare } from './format';
 import { MiniPlayingCard } from './playing-card';
+import { TableChip } from './table-chip';
 import type { TablePoint } from './use-table-anchors';
 
 // Probabilities summed from many draws land a hair away from exactly one.
@@ -67,9 +67,9 @@ function DealerSummary({ dealer }: DealerSummaryProps): ReactElement {
 	}
 
 	return (
-		<span className="flex items-baseline gap-1.5 font-mono text-xs tabular-nums">
-			<span className="font-sans text-muted-foreground">Bust</span>
-			<span className="text-outcome-win">{formatShare(dealer.bustChance)}</span>
+		<span className="flex items-baseline gap-1.5 text-xs">
+			<span className="text-muted-foreground">Bust</span>
+			<span className="font-medium text-outcome-win">{formatShare(dealer.bustChance)}</span>
 		</span>
 	);
 }
@@ -85,16 +85,7 @@ export function DealerOutlookChip({ dealer, className, style }: DealerOutlookChi
 	const isSettled = settledResult(dealer) !== undefined;
 
 	return (
-		<div
-			role="group"
-			tabIndex={0}
-			aria-label="Dealer"
-			className={cn(
-				'group flex flex-col gap-1 rounded-lg border bg-card px-2 py-1.5 font-sans text-foreground shadow-[inset_0_1px_0_oklch(1_0_0/6%),0_8px_16px_-6px_oklch(0_0_0/60%)] outline-none backdrop-blur-md',
-				className
-			)}
-			style={style}
-		>
+		<TableChip label="Dealer" className={className} style={style}>
 			<DealerSummary dealer={dealer} />
 
 			{!isSettled && (
@@ -102,7 +93,7 @@ export function DealerOutlookChip({ dealer, className, style }: DealerOutlookChi
 					<ChanceList rows={chanceRows(dealer.chances)} />
 				</div>
 			)}
-		</div>
+		</TableChip>
 	);
 }
 

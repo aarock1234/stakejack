@@ -25,7 +25,7 @@ type TableOutlooksProps = {
 export function TableOutlooks({ outlooks }: TableOutlooksProps): ReactElement {
 	return (
 		<section className="flex flex-col gap-2">
-			<p className="text-xs text-muted-foreground">Table</p>
+			<p className="text-xs font-medium text-muted-foreground">Table</p>
 			<ValueList
 				rows={outlooks.map(seat => ({
 					key: String(seat.seatNumber),

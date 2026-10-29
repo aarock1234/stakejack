@@ -41,11 +41,11 @@ export function PlayingCard({ card }: PlayingCardProps): ReactElement {
 			role="img"
 			aria-label={cardName(card)}
 			className={cn(
-				'relative inline-flex h-10 w-7 shrink-0 flex-col rounded-[5px] bg-card-paper p-1 font-mono shadow-[0_1px_2px_oklch(0_0_0/45%),inset_0_-1px_0_oklch(0_0_0/12%)]',
+				'relative inline-flex h-10 w-7 shrink-0 flex-col rounded-[5px] bg-card-paper p-1 font-sans shadow-[0_1px_2px_rgb(0_0_0/45%),inset_0_-1px_0_rgb(0_0_0/12%)]',
 				inkColor(card)
 			)}
 		>
-			<span className="text-[11px] leading-none font-semibold tracking-tighter">{card.face}</span>
+			<span className="text-xs leading-none font-semibold tracking-tight">{card.face}</span>
 			<span className="mt-auto self-end text-sm leading-none">{SUIT_SYMBOLS[card.suit]}</span>
 		</span>
 	);
@@ -58,12 +58,12 @@ export function MiniPlayingCard({ card }: PlayingCardProps): ReactElement {
 			role="img"
 			aria-label={cardName(card)}
 			className={cn(
-				'inline-flex h-4.5 shrink-0 items-center gap-px rounded-[3px] bg-card-paper px-1 font-mono text-[10px] leading-none font-semibold tracking-tighter shadow-[0_1px_1px_oklch(0_0_0/40%)]',
+				'inline-flex h-4.5 shrink-0 items-center gap-px rounded-[3px] bg-card-paper px-1 font-sans text-micro leading-none font-semibold tracking-tight shadow-[0_1px_1px_rgb(0_0_0/40%)]',
 				inkColor(card)
 			)}
 		>
 			{card.face}
-			<span className="text-[9px]">{SUIT_SYMBOLS[card.suit]}</span>
+			<span className="text-[10px]">{SUIT_SYMBOLS[card.suit]}</span>
 		</span>
 	);
 }

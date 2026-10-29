@@ -56,7 +56,7 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 				</div>
 
 				<div className="flex flex-col items-end gap-2">
-					<p className="text-xs text-muted-foreground">Dealer</p>
+					<p className="text-xs font-medium text-muted-foreground">Dealer</p>
 					<PlayingCard card={decision.dealerUpCard} />
 				</div>
 			</div>
@@ -82,13 +82,15 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 			</div>
 
 			{otherOptions.length > 0 && (
-				<ValueList
-					rows={otherOptions.map(option => ({
-						key: option.action,
-						label: actionLabel(option.action),
-						value: formatPercent(option.expectedValue),
-					}))}
-				/>
+				<div className="border-t border-border-faint pt-2">
+					<ValueList
+						rows={otherOptions.map(option => ({
+							key: option.action,
+							label: actionLabel(option.action),
+							value: formatPercent(option.expectedValue),
+						}))}
+					/>
+				</div>
 			)}
 		</section>
 	);

@@ -2,12 +2,12 @@ import type { CSSProperties, ReactElement } from 'react';
 
 import { SeatRole } from '@/advisor/outlook-view';
 import type { HandStanding as HandStandingValue, SeatOutlook } from '@/advisor/outlook-view';
-import { cn } from '@/lib/utils';
 
 import { ChanceList } from './chance-list';
 import type { ChanceRow } from './chance-list';
 import { HandStanding } from './hand-standing';
 import { MiniPlayingCard } from './playing-card';
+import { TableChip } from './table-chip';
 import type { TableAnchors } from './use-table-anchors';
 
 const ROLE_LABELS: Readonly<Record<SeatRole, string | undefined>> = {
@@ -76,19 +76,14 @@ export function SeatOutlookChip({ seat, className, style }: SeatOutlookChipProps
 	const roleLabel = ROLE_LABELS[seat.role];
 
 	return (
-		<div
-			role="group"
-			tabIndex={0}
-			aria-label={roleLabel ?? `Seat ${seat.seatNumber + 1}`}
-			className={cn(
-				'group flex flex-col gap-1 rounded-lg border bg-card px-2 py-1.5 font-sans text-foreground shadow-[inset_0_1px_0_oklch(1_0_0/6%),0_8px_16px_-6px_oklch(0_0_0/60%)] outline-none backdrop-blur-md',
-				seat.role !== SeatRole.OTHER && 'border-foreground/25',
-				className
-			)}
+		<TableChip
+			label={roleLabel ?? `Seat ${seat.seatNumber + 1}`}
+			isHighlighted={seat.role !== SeatRole.OTHER}
+			className={className}
 			style={style}
 		>
 			{roleLabel && (
-				<p className="hidden text-[11px] leading-4 text-muted-foreground group-focus:block group-hover:block">
+				<p className="hidden text-micro font-medium text-muted-foreground group-focus:block group-hover:block">
 					{roleLabel}
 				</p>
 			)}
@@ -98,7 +93,7 @@ export function SeatOutlookChip({ seat, className, style }: SeatOutlookChipProps
 					<SeatHand key={standing.handIndex} standing={standing} />
 				))}
 			</div>
-		</div>
+		</TableChip>
 	);
 }
 

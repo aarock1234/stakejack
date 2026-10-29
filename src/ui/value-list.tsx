@@ -1,23 +1,27 @@
 import type { ReactElement, ReactNode } from 'react';
 
+import { cn } from '@/lib/utils';
+
 export type ValueRow = {
 	key: string;
 	label: ReactNode;
 	value: ReactNode;
+	// A text colour for the value; neutral when omitted.
+	tone?: string;
 };
 
 type ValueListProps = {
 	rows: readonly ValueRow[];
 };
 
-// Secondary facts under a recommendation, in a quiet inset: labels on the left, numbers on the right.
+// Secondary facts under a recommendation, one per line: the label on the left, its figure on the right.
 export function ValueList({ rows }: ValueListProps): ReactElement {
 	return (
-		<dl className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 rounded-lg bg-muted/50 px-3 py-2.5 text-xs">
+		<dl className="flex flex-col text-sm">
 			{rows.map(row => (
-				<div key={row.key} className="contents">
-					<dt className="whitespace-nowrap text-muted-foreground">{row.label}</dt>
-					<dd className="text-right font-mono text-foreground/80 tabular-nums">{row.value}</dd>
+				<div key={row.key} className="flex h-6 items-center gap-3">
+					<dt className="truncate text-muted-foreground">{row.label}</dt>
+					<dd className={cn('ml-auto shrink-0 font-medium text-foreground', row.tone)}>{row.value}</dd>
 				</div>
 			))}
 		</dl>

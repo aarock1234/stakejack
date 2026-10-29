@@ -38,6 +38,15 @@
 	--text-2xl: 24px;
 	--text-2xl--line-height: 30px;
 
+	/* Hairline labels under chips and the small print beneath a figure. */
+	--text-micro: 11px;
+	--text-micro--line-height: 14px;
+
+	/* A figure that stands on its own, such as the true count or the session's result. */
+	--text-figure: 15px;
+	--text-figure--line-height: 20px;
+	--text-figure--font-weight: 600;
+
 	/* The one large line in the panel: the move to make or the bet to place. */
 	--text-display: 28px;
 	--text-display--line-height: 32px;
@@ -46,28 +55,31 @@
 }
 
 /*
- * shadcn/ui neutral theme, dark only: the panel always sits over the dark game table. WXT resets every
- * ordinary property on the shadow host with `all: initial`, but custom properties survive, so only theme
- * tokens live here and the panel positions itself.
+ * A neutral, near-black palette, dark only: the panel always sits over the dark game table, so its
+ * surfaces are slightly translucent and blurred. WXT resets every ordinary property on the shadow host
+ * with `all: initial`, but custom properties survive, so only theme tokens live here and the panel
+ * positions itself.
  */
 :root,
 :host {
-	--radius: 10px;
-	--background: oklch(0.145 0 0);
-	--foreground: oklch(0.97 0 0);
-	--card: oklch(0.165 0.002 260 / 88%);
-	--card-foreground: oklch(0.97 0 0);
-	--primary: oklch(0.922 0 0);
-	--primary-foreground: oklch(0.205 0 0);
-	--secondary: oklch(0.24 0.002 260);
-	--secondary-foreground: oklch(0.97 0 0);
-	--muted: oklch(0.22 0.002 260);
-	--muted-foreground: oklch(0.66 0.005 260);
-	--accent: oklch(0.26 0.002 260);
-	--accent-foreground: oklch(0.97 0 0);
-	--destructive: oklch(0.704 0.191 22.216);
-	--border: oklch(1 0 0 / 9%);
-	--ring: oklch(0.556 0 0);
+	--radius: 8px;
+	--background: #0a0a0a;
+	--foreground: #ededed;
+	--card: rgb(10 10 10 / 90%);
+	--card-foreground: #ededed;
+	--primary: #ffffff;
+	--primary-foreground: #0a0a0a;
+	--secondary: #111111;
+	--secondary-foreground: #ededed;
+	--muted: #1a1a1a;
+	--muted-foreground: #8f8f8f;
+	--subtle: #5c5c5c;
+	--accent: #232323;
+	--accent-foreground: #ededed;
+	--destructive: #e5484d;
+	--border: #262626;
+	--border-faint: #1f1f1f;
+	--ring: #ffffff;
 
 	/* Playing cards: warm paper, dark ink, and a muted red for hearts and diamonds. */
 	--card-paper: oklch(0.955 0.008 85);
@@ -78,16 +90,16 @@
 	 * Each move keeps one soft accent so the recommendation reads at a glance; everything else stays
 	 * tonal.
 	 */
-	--action-hit: oklch(0.8 0.09 235);
-	--action-stand: oklch(0.86 0.1 85);
-	--action-double: oklch(0.82 0.1 160);
-	--action-split: oklch(0.8 0.09 300);
-	--action-cash-out: oklch(0.85 0 0);
+	--action-hit: #58a6ff;
+	--action-stand: #f5a623;
+	--action-double: #3fb950;
+	--action-split: #a371f7;
+	--action-cash-out: #ededed;
 
-	/* Hand outlooks: a win, a push, or a loss against the dealer. */
-	--outcome-win: oklch(0.8 0.11 160);
-	--outcome-push: oklch(0.6 0 0);
-	--outcome-lose: oklch(0.7 0.13 22);
+	/* Hand outlooks and money: a win, a push, or a loss. */
+	--outcome-win: #3fb950;
+	--outcome-push: #5c5c5c;
+	--outcome-lose: #e5484d;
 }
 
 @theme inline {
@@ -105,10 +117,12 @@
 	--color-secondary-foreground: var(--secondary-foreground);
 	--color-muted: var(--muted);
 	--color-muted-foreground: var(--muted-foreground);
+	--color-subtle: var(--subtle);
 	--color-accent: var(--accent);
 	--color-accent-foreground: var(--accent-foreground);
 	--color-destructive: var(--destructive);
 	--color-border: var(--border);
+	--color-border-faint: var(--border-faint);
 	--color-ring: var(--ring);
 	--color-action-hit: var(--action-hit);
 	--color-action-stand: var(--action-stand);
@@ -148,5 +162,11 @@
 		--tw-ring-offset-shadow: 0 0 #0000;
 
 		border-color: var(--color-border);
+	}
+
+	/* Figures line up in columns, and type renders as crisply as the game's own controls. */
+	* {
+		-webkit-font-smoothing: antialiased;
+		font-variant-numeric: tabular-nums;
 	}
 }

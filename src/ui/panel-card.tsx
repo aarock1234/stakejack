@@ -68,9 +68,9 @@ function MinimiseButton({ isCollapsed, onToggle }: CollapseControl): ReactElemen
 			aria-label={isCollapsed ? 'Show the full panel' : 'Minimise the panel'}
 			aria-expanded={!isCollapsed}
 			onClick={onToggle}
-			className="grid size-5 cursor-pointer place-items-center rounded-md transition-colors hover:bg-muted hover:text-foreground"
+			className="grid size-6 cursor-pointer place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 		>
-			<Icon aria-hidden className="size-3.5" />
+			<Icon aria-hidden className="size-4" />
 		</button>
 	);
 }
@@ -109,33 +109,33 @@ export function PanelCard({
 			aria-label="Stakejack advice"
 			aria-live="polite"
 			className={cn(
-				'w-68 gap-0 overflow-hidden rounded-2xl py-0 font-sans shadow-[inset_0_1px_0_oklch(1_0_0/6%),0_24px_48px_-12px_oklch(0_0_0/65%)] backdrop-blur-xl',
+				'w-68 gap-0 overflow-hidden rounded-[12px] border-border py-0 font-sans text-sm shadow-[0_16px_40px_rgb(0_0_0/65%)] backdrop-blur-xl',
 				className
 			)}
 			style={style}
 		>
 			<CardHeader
 				className={cn(
-					'grid-rows-1 px-4 py-3',
+					'grid-rows-1 py-2.5 pr-2.5 pl-4',
 					dragHandle && 'cursor-grab touch-none select-none active:cursor-grabbing'
 				)}
 				title={dragHandle && 'Drag to move. Double-click to reset.'}
 				{...dragHandle}
 			>
-				<CardTitle className="flex items-center gap-2 text-xs font-medium tracking-tight">
+				<CardTitle className="flex items-center gap-2 text-sm font-semibold">
 					<span
 						aria-hidden
-						className="grid size-5 place-items-center rounded-md bg-foreground text-background"
+						className="grid size-5 place-items-center rounded-[5px] bg-foreground text-background"
 					>
 						<Spade className="size-3" strokeWidth={2.5} />
 					</span>
 					Stakejack
 				</CardTitle>
-				<CardAction className="row-span-1 flex items-center gap-1.5 self-center text-xs text-muted-foreground">
+				<CardAction className="row-span-1 flex items-center gap-1.5 self-center text-sm text-muted-foreground">
 					{view.wallet ? (
 						<>
 							<Wallet aria-hidden className="size-3.5" />
-							<span className="font-mono tabular-nums">
+							<span className="font-medium text-foreground">
 								{formatMoney(view.wallet.balance, view.wallet.currency)}
 							</span>
 						</>
@@ -150,7 +150,7 @@ export function PanelCard({
 
 			{!isConnecting && !isCollapsed && (
 				// Scrolls on its own when the game window is shorter than the panel, keeping the header in reach.
-				<CardContent className="flex min-h-0 flex-col gap-5 overflow-y-auto border-t px-4 py-4">
+				<CardContent className="flex min-h-0 flex-col gap-5 overflow-y-auto border-t border-border-faint px-4 py-4">
 					<PanelBody view={view} isDealerOnTable={isDealerOnTable} />
 
 					{unanchoredOutlooks.length > 0 && (

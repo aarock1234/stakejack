@@ -6,10 +6,12 @@ import { Caption } from './caption';
 import { formatMoney, formatMoneyChange } from './format';
 import { StatGrid } from './stat-grid';
 import type { Stat } from './stat-grid';
+import { ValueList } from './value-list';
+import type { ValueRow } from './value-list';
 
 const SESSION_INFO = [
 	'Result is what you actually won or lost on the rounds played since this table opened. Expected is what those bets were worth on average: the edge the count gave when each bet went down, the worse odds of side bets, and anything given up by moves that went against the advice. The gap between the two is luck.',
-	'The last line compares each decision you made on your own hands with the move shown at that moment. Its cost is what the different moves gave up on average, not what they actually lost.',
+	'Moves compares each decision you made on your own hands with the move shown at that moment. Their cost is what the other moves gave up on average, not what they actually lost.',
 ].join('\n\n');
 
 function moneyTone(amount: number): string | undefined {
@@ -21,43 +23,44 @@ function moneyTone(amount: number): string | undefined {
 }
 
 function sessionStats(session: SessionSummary, currency: string): Stat[] {
+	const rounds = session.roundsPlayed === 1 ? 'round' : 'rounds';
+
 	return [
 		{
 			key: 'result',
 			label: 'Result',
 			value: formatMoneyChange(session.net, currency),
+			detail: `Expected ${formatMoneyChange(session.expected, currency)}`,
 			tone: moneyTone(session.net),
-		},
-		{
-			key: 'expected',
-			label: 'Expected',
-			value: formatMoneyChange(session.expected, currency),
-		},
-		{
-			key: 'rounds',
-			label: 'Rounds',
-			value: session.roundsPlayed,
 		},
 		{
 			key: 'wagered',
 			label: 'Wagered',
 			value: formatMoney(session.wagered, currency),
+			detail: `${session.roundsPlayed} ${rounds}`,
 		},
 	];
 }
 
-// "2 of 3 moves followed the advice. The other cost about $0.03."
-function moveSummary(moves: MoveReview, currency: string): string {
-	const followed = `${moves.movesMatched} of ${moves.movesPlayed} moves followed the advice.`;
-	const others = moves.movesPlayed - moves.movesMatched;
+function moveRows(moves: MoveReview, currency: string): ValueRow[] {
+	const rows: ValueRow[] = [
+		{
+			key: 'moves',
+			label: 'Moves like the advice',
+			value: `${moves.movesMatched} of ${moves.movesPlayed}`,
+		},
+	];
 
-	if (others === 0 || moves.cost <= 0) {
-		return followed;
+	if (moves.cost > 0) {
+		rows.push({
+			key: 'cost',
+			label: 'Cost of the others',
+			value: formatMoney(moves.cost, currency),
+			tone: 'text-outcome-lose',
+		});
 	}
 
-	const subject = others === 1 ? 'The other' : 'The others';
-
-	return `${followed} ${subject} cost about ${formatMoney(moves.cost, currency)}.`;
+	return rows;
 }
 
 type SessionOverviewProps = {
@@ -67,14 +70,12 @@ type SessionOverviewProps = {
 
 export function SessionOverview({ session, currency }: SessionOverviewProps): ReactElement {
 	return (
-		<div className="flex flex-col gap-2.5">
+		<section className="flex flex-col gap-2.5">
 			<Caption info={SESSION_INFO}>This session</Caption>
 
-			<StatGrid stats={sessionStats(session, currency)} className="rounded-lg bg-muted/50 px-3 py-2.5" />
+			<StatGrid stats={sessionStats(session, currency)} />
 
-			{session.moves.movesPlayed > 0 && (
-				<p className="text-xs text-muted-foreground">{moveSummary(session.moves, currency)}</p>
-			)}
-		</div>
+			{session.moves.movesPlayed > 0 && <ValueList rows={moveRows(session.moves, currency)} />}
+		</section>
 	);
 }
