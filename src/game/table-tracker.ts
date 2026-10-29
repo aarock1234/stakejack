@@ -1,8 +1,10 @@
 import { ApiResponseKind } from './api-responses';
 import type { ApiResponse, TableLimits, Wallet } from './api-responses';
+import { BetKind } from './bets';
+import type { PlacedBet } from './bets';
 import type { CardFace, Rank } from './cards';
 import { CommandName } from './commands';
-import type { GameCommand } from './commands';
+import type { CommandBetBehind, GameCommand } from './commands';
 import { MessageKind } from './messages';
 import type { GameMessage, Hand } from './messages';
 import { ShoeTracker } from './shoe-tracker';
@@ -22,11 +24,11 @@ export class TableTracker {
 	#hasGameTraffic = false;
 	#tableId: string | undefined;
 	#wallet: Wallet | undefined;
-	#startingBalance: number | undefined;
 	#limits: TableLimits | undefined;
 	readonly #seatOwners = new Map<number, string>();
 	readonly #playerSeats = new Set<number>();
 	readonly #mainBets = new Map<number, number>();
+	readonly #ownBetsBehind = new Map<number, number>();
 	readonly #hands = new Map<number, readonly Hand[]>();
 
 	// Any frame from the game socket, even one the advisor does not decode, proves a table is live here.
@@ -66,10 +68,9 @@ export class TableTracker {
 				);
 				break;
 
-			case MessageKind.MAIN_BET:
-				this.#followRound(message.gameId);
-				this.#recordOwner(message.seatNumber, message.userId);
-				this.#mainBets.set(message.seatNumber, message.amount);
+			case MessageKind.BET_PLACED:
+				this.#followRound(message.bet.gameId);
+				this.#recordBet(message.bet);
 				break;
 
 			case MessageKind.SEAT_TAKEN:
@@ -81,6 +82,10 @@ export class TableTracker {
 				this.#seatOwners.delete(message.seatNumber);
 				this.#playerSeats.delete(message.seatNumber);
 				break;
+
+			// What a round paid the player belongs to their session, not to the table.
+			case MessageKind.ROUND_PAID:
+				break;
 		}
 	}
 
@@ -89,7 +94,6 @@ export class TableTracker {
 			case ApiResponseKind.WALLET:
 				this.#wallet = response.wallet;
 				this.#userId = response.wallet.userId;
-				this.#startingBalance ??= response.wallet.balance;
 				break;
 
 			case ApiResponseKind.TABLE_CONFIG:
@@ -99,10 +103,15 @@ export class TableTracker {
 		}
 	}
 
-	// Seats named in the player's own commands are theirs, whatever user id the game reports.
+	// Seats named in the player's own commands are theirs, whatever user id the game reports, except
+	// seats they only bet behind.
 	send(command: GameCommand): void {
 		if (command.userId) {
 			this.#userId = command.userId;
+		}
+
+		if (command.betsBehind) {
+			this.#replaceOwnBetsBehind(command.betsBehind);
 		}
 
 		for (const seatNumber of command.seatNumbers) {
@@ -111,7 +120,7 @@ export class TableTracker {
 			} else if (command.name === CommandName.LEAVE_SEAT) {
 				this.#playerSeats.delete(seatNumber);
 				this.#seatOwners.delete(seatNumber);
-			} else {
+			} else if (!this.#ownBetsBehind.has(seatNumber)) {
 				this.#playerSeats.add(seatNumber);
 			}
 		}
@@ -129,13 +138,9 @@ export class TableTracker {
 		return this.#wallet;
 	}
 
-	// Profit or loss since the first balance seen in this frame.
-	get sessionChange(): number | undefined {
-		if (!this.#wallet || this.#startingBalance === undefined) {
-			return undefined;
-		}
-
-		return this.#wallet.balance - this.#startingBalance;
+	// The player's user id, once their wallet or one of their commands has named it.
+	get userId(): string | undefined {
+		return this.#userId;
 	}
 
 	get limits(): TableLimits | undefined {
@@ -180,8 +185,57 @@ export class TableTracker {
 		return [...this.#hands.values()].flatMap(hands => hands.flatMap(hand => hand.cards.map(card => card.rank)));
 	}
 
+	// The seat owner's own main bet, never a bet placed behind it.
 	mainBetAt(seatNumber: number): number | undefined {
 		return this.#mainBets.get(seatNumber);
+	}
+
+	// Seats where the player has a bet behind someone else's hand this round, in seat order.
+	betBehindSeats(): number[] {
+		const ownSeats = this.ownSeats();
+
+		return [...this.#ownBetsBehind.keys()]
+			.filter(seatNumber => !ownSeats.includes(seatNumber))
+			.toSorted((left, right) => left - right);
+	}
+
+	#isOwnedByAnother(seatNumber: number, userId: string): boolean {
+		const owner = this.#seatOwners.get(seatNumber);
+
+		return owner !== undefined && owner !== userId;
+	}
+
+	// Only main bets settle who owns a seat and what its hand is staked at. Someone betting on a seat another
+	// player owns is betting behind, even if the bet does not sit on the bet-behind spot.
+	#recordBet(bet: PlacedBet): void {
+		if (bet.kind !== BetKind.MAIN) {
+			return;
+		}
+
+		if (bet.isBehind || this.#isOwnedByAnother(bet.seatNumber, bet.userId)) {
+			this.#recordBetBehind(bet);
+			return;
+		}
+
+		this.#recordOwner(bet.seatNumber, bet.userId);
+		this.#mainBets.set(bet.seatNumber, bet.amount);
+	}
+
+	#recordBetBehind(bet: PlacedBet): void {
+		if (bet.userId === this.#userId && bet.amount > 0) {
+			this.#ownBetsBehind.set(bet.seatNumber, bet.amount);
+		}
+	}
+
+	// The player's bet list names every bet behind they still have, so any other is taken back.
+	#replaceOwnBetsBehind(betsBehind: readonly CommandBetBehind[]): void {
+		this.#ownBetsBehind.clear();
+
+		for (const betBehind of betsBehind) {
+			if (betBehind.amount > 0) {
+				this.#ownBetsBehind.set(betBehind.seatNumber, betBehind.amount);
+			}
+		}
 	}
 
 	// The server's word on who owns a seat overrides a claim made from the player's own commands.
@@ -203,6 +257,7 @@ export class TableTracker {
 		this.#gameId = gameId;
 		this.#hands.clear();
 		this.#mainBets.clear();
+		this.#ownBetsBehind.clear();
 	}
 
 	// A sitdown command carries no user id, but the server's seat announcement that follows it does.

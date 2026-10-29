@@ -17,7 +17,13 @@ export function rankLabel(rank: Rank): string {
 	return rank === Rank.TEN ? '10' : rank;
 }
 
-// "Pair of 8s" while the pair can still be split, otherwise "Soft 18" or "Hard 12".
+// Both ways a soft hand can count, such as "5/15", as the game shows them. A soft 21 is simply 21, since
+// nobody draws to it.
+export function formatHandTotal(total: number, isSoftTotal: boolean): string {
+	return isSoftTotal && total < 21 ? `${total - 10}/${total}` : String(total);
+}
+
+// "Pair of 8s" while the pair can still be split, otherwise "Soft 8/18" or "Hard 12".
 export function handLabel(cards: readonly Rank[], canSplit: boolean): string {
 	const [firstCard] = cards;
 
@@ -28,7 +34,7 @@ export function handLabel(cards: readonly Rank[], canSplit: boolean): string {
 	const hand = handPoints(cards);
 	const softness = isSoft(hand) ? 'Soft' : 'Hard';
 
-	return `${softness} ${bestTotal(hand)}`;
+	return `${softness} ${formatHandTotal(bestTotal(hand), isSoft(hand))}`;
 }
 
 const percentFormat = new Intl.NumberFormat('en-US', {
@@ -64,8 +70,29 @@ export function formatShare(fraction: number): string {
 	return shareFormat.format(fraction);
 }
 
+const runningCountFormat = new Intl.NumberFormat('en-US', {
+	maximumFractionDigits: 0,
+	signDisplay: 'exceptZero',
+});
+
+const decksFormat = new Intl.NumberFormat('en-US', {
+	minimumFractionDigits: 1,
+	maximumFractionDigits: 1,
+});
+
+// A true count, such as "+2.4" or "−0.8".
 export function formatCount(count: number): string {
 	return withTypographicMinus(countFormat.format(count));
+}
+
+// A running count, always a whole number, such as "+14" or "−3".
+export function formatRunningCount(count: number): string {
+	return withTypographicMinus(runningCountFormat.format(count));
+}
+
+// Decks left in the shoe, such as "4.5".
+export function formatDecks(decks: number): string {
+	return decksFormat.format(decks);
 }
 
 export function formatMoney(amount: number, currency: string): string {

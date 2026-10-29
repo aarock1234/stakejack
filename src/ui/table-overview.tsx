@@ -2,28 +2,40 @@ import type { ReactElement } from 'react';
 
 import { Hourglass, Target } from 'lucide-react';
 
-import type { AdvisorView, HandStanding as HandStandingValue } from '@/advisor/advisor-view';
+import type { AdvisorView } from '@/advisor/advisor-view';
+import { SeatRole } from '@/advisor/outlook-view';
+import type { HandStanding as HandStandingValue, SeatOutlook } from '@/advisor/outlook-view';
 
 import { Caption } from './caption';
-import { formatMoneyChange, formatShare } from './format';
+import { DealerOverview } from './dealer-outlook';
+import { formatHandTotal, formatShare } from './format';
 import { HandStanding, OutlookBar, settledVerdict } from './hand-standing';
 import { Headline } from './headline';
-import { ValueList } from './value-list';
-import type { ValueRow } from './value-list';
+import { SessionOverview } from './session-overview';
+import { ShoeOverview } from './shoe-overview';
 
-type OwnHandProps = {
+type PlayedHandProps = {
+	// "Your hand" or "Behind seat 3".
+	name: string;
 	standing: HandStandingValue;
 };
 
-// The player's own hand after they have acted: its total and its chance of beating the dealer.
-function OwnHand({ standing }: OwnHandProps): ReactElement {
+// A hand the player has money on, after the moves are made: its total and its chance of beating the dealer.
+function PlayedHand({ name, standing }: PlayedHandProps): ReactElement {
 	const verdict = settledVerdict(standing);
 
 	if (standing.isInPlay) {
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">Your hand, in play</p>
-				<Headline icon={Hourglass} label={<span className="font-mono tabular-nums">{standing.total}</span>} />
+				<p className="text-xs text-muted-foreground">{name}, in play</p>
+				<Headline
+					icon={Hourglass}
+					label={
+						<span className="font-mono tabular-nums">
+							{formatHandTotal(standing.total, standing.isSoft)}
+						</span>
+					}
+				/>
 			</div>
 		);
 	}
@@ -31,7 +43,9 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	if (verdict) {
 		return (
 			<div className="flex flex-col gap-2">
-				<p className="text-xs text-muted-foreground">Your hand, {standing.total}</p>
+				<p className="text-xs text-muted-foreground">
+					{name}, {standing.total}
+				</p>
 				<Headline icon={verdict.emoji} label={verdict.label} textColor={verdict.color} />
 			</div>
 		);
@@ -40,8 +54,8 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	return (
 		<div className="flex flex-col gap-3">
 			<div className="flex flex-col gap-2">
-				<Caption info="Your hand is done, so this is the chance the dealer ends up below you or busts. It updates with every card the dealer draws.">
-					Your {standing.total}, chance to win
+				<Caption info="The hand is done, so this is the chance the dealer ends up below it or busts. It updates with every card the dealer draws.">
+					{name}, {standing.total}, chance to win
 				</Caption>
 				<Headline
 					icon={Target}
@@ -53,23 +67,27 @@ function OwnHand({ standing }: OwnHandProps): ReactElement {
 	);
 }
 
-type OwnHandsProps = {
-	standings: readonly HandStandingValue[];
+type PlayedSeatProps = {
+	seat: SeatOutlook;
 };
 
-// A single hand gets the large treatment; split hands sit side by side.
-function OwnHands({ standings }: OwnHandsProps): ReactElement | null {
-	const [onlyHand] = standings;
+function seatName(seat: SeatOutlook): string {
+	return seat.role === SeatRole.BEHIND ? `Behind seat ${seat.seatNumber + 1}` : 'Your hand';
+}
 
-	if (standings.length === 1 && onlyHand) {
-		return <OwnHand standing={onlyHand} />;
+// A single hand gets the large treatment; split hands sit side by side.
+function PlayedSeat({ seat }: PlayedSeatProps): ReactElement {
+	const [onlyHand] = seat.hands;
+
+	if (seat.hands.length === 1 && onlyHand) {
+		return <PlayedHand name={seatName(seat)} standing={onlyHand} />;
 	}
 
 	return (
 		<div className="flex flex-col gap-2">
-			<p className="text-xs text-muted-foreground">Your hands</p>
+			<p className="text-xs text-muted-foreground">{seatName(seat)}, split</p>
 			<div className="flex gap-4">
-				{standings.map(standing => (
+				{seat.hands.map(standing => (
 					<HandStanding key={standing.handIndex} standing={standing} />
 				))}
 			</div>
@@ -77,47 +95,31 @@ function OwnHands({ standings }: OwnHandsProps): ReactElement | null {
 	);
 }
 
-// Shown behind the (i) on the shoe section.
-const SHOE_INFO =
-	'The count tracks which cards are left. Small cards leaving is good for you, tens and aces leaving is good for the house. It only works if every card since the shuffle was seen, so it waits for a fresh shoe and resets if you leave the table. Pragmatic reshuffles about halfway through the eight decks, so big swings are rare.';
-
-// The count and edge already sit in the panel header; this adds how deep the shoe is and the session.
-function overviewRows(view: AdvisorView): ValueRow[] {
-	const { shoe } = view;
-	const rows: ValueRow[] = [];
-
-	rows.push({
-		key: 'dealt',
-		label: 'Cards dealt',
-		value: shoe.trueCount === undefined ? '—' : `${shoe.cardsDealt} of ${shoe.shoeSize}`,
-	});
-
-	if (view.wallet && view.sessionChange !== undefined) {
-		rows.push({
-			key: 'session',
-			label: 'Session P/L',
-			value: formatMoneyChange(view.sessionChange, view.wallet.currency),
-		});
-	}
-
-	return rows;
-}
-
 type TableOverviewProps = {
 	view: AdvisorView;
+	// The dealer's chances already rest on the table beside their score.
+	isDealerOnTable: boolean;
 };
 
-// Shown whenever there is nothing to decide: how the player's hand stands, the shoe, and the session.
-export function TableOverview({ view }: TableOverviewProps): ReactElement {
-	const ownStandings = view.outlooks.filter(seat => seat.isOwnSeat).flatMap(seat => seat.hands);
+// Shown whenever there is nothing to decide: how the player's hands stand, the dealer, the shoe, and the
+// session.
+export function TableOverview({ view, isDealerOnTable }: TableOverviewProps): ReactElement {
+	const playedSeats = view.outlooks.filter(seat => seat.role !== SeatRole.OTHER);
 
+	// A hairline between each part keeps the hands, dealer, shoe, and session from running together.
 	return (
-		<section className="flex flex-col gap-3">
-			{ownStandings.length > 0 && <OwnHands standings={ownStandings} />}
-			<div className="flex flex-col gap-2">
-				<Caption info={SHOE_INFO}>The shoe</Caption>
-				<ValueList rows={overviewRows(view)} />
-			</div>
+		<section className="flex flex-col gap-4 [&>*+*]:border-t [&>*+*]:pt-4">
+			{playedSeats.map(seat => (
+				<PlayedSeat key={seat.seatNumber} seat={seat} />
+			))}
+
+			{view.dealer && !isDealerOnTable && <DealerOverview dealer={view.dealer} />}
+
+			<ShoeOverview shoe={view.shoe} />
+
+			{view.wallet && view.session.roundsPlayed > 0 && (
+				<SessionOverview session={view.session} currency={view.wallet.currency} />
+			)}
 		</section>
 	);
 }

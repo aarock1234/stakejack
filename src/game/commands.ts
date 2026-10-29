@@ -12,6 +12,8 @@ const BET_PATTERN = /<bet\s([^>]*)>/g;
 export const CommandName = {
 	SIT_DOWN: 'sitdown',
 	LEAVE_SEAT: 'unseat',
+	// Restates every bet the player has on the table, so a bet missing from it has been taken back.
+	PLACE_BETS: 'lpbet',
 } as const;
 
 const commandAttributesSchema = z.object({
@@ -19,11 +21,19 @@ const commandAttributesSchema = z.object({
 	seatNum: z.coerce.number().optional(),
 });
 
+// A bet placed behind another player's hand: it rides on their decisions.
+export type CommandBetBehind = {
+	seatNumber: number;
+	amount: number;
+};
+
 export type GameCommand = {
 	name: string;
 	userId?: string;
 	// Every seat this command acts for: the command's own seat and the seats of any bets it places.
 	seatNumbers: readonly number[];
+	// The player's complete list of bets behind, present only on commands that place bets.
+	betsBehind?: readonly CommandBetBehind[];
 };
 
 function readAttributes(attributeText: string): Record<string, string> {
@@ -54,6 +64,24 @@ function readBetSeats(data: string): number[] {
 	return seats;
 }
 
+function readBetsBehind(data: string): CommandBetBehind[] {
+	const betsBehind: CommandBetBehind[] = [];
+
+	for (const [, attributeText = ''] of data.matchAll(BET_PATTERN)) {
+		const { seat, amount, betbehind } = readAttributes(attributeText);
+		const stake = Number(amount);
+
+		if (seat !== undefined && betbehind === 'true' && Number.isFinite(stake)) {
+			betsBehind.push({
+				seatNumber: Number(seat),
+				amount: stake,
+			});
+		}
+	}
+
+	return betsBehind;
+}
+
 export function parseGameCommand(data: string): GameCommand | undefined {
 	const match = COMMAND_PATTERN.exec(data);
 
@@ -75,5 +103,6 @@ export function parseGameCommand(data: string): GameCommand | undefined {
 		name,
 		userId,
 		seatNumbers: [...new Set(seatNumbers)],
+		betsBehind: name === CommandName.PLACE_BETS ? readBetsBehind(data) : undefined,
 	};
 }

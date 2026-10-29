@@ -12,14 +12,23 @@ import { ValueList } from './value-list';
 
 // Shown behind the (i) on every move.
 const MOVE_INFO =
-	'The move that wins the most money over time for these exact cards. The percentages are what each choice returns on your bet on average: +10% means you make 10 cents per dollar in the long run. Once the shoe is being counted, they account for the cards already played.';
+	'The move that wins the most money over time for these exact cards. The percentages are what each choice returns on your bet on average: +10% means you make 10 cents per dollar in the long run. Once the shoe is being counted, they account for the cards already played. Cash out is hidden when its quote is priced on a different bet than the one shown, which can happen when betting behind.';
 
-// "Your hand, soft 18", or "Hand 2, hard 12" once a pair has been split.
+function handName(decision: HandDecision): string {
+	const seatName = `Seat ${decision.seatNumber + 1}`;
+
+	if (decision.isBetBehind) {
+		return decision.isSplitHand ? `Behind ${seatName}, hand ${decision.handIndex + 1}` : `Behind ${seatName}`;
+	}
+
+	return decision.isSplitHand ? `Hand ${decision.handIndex + 1}` : 'Your hand';
+}
+
+// "Your hand, soft 18", "Hand 2, hard 12" once a pair has been split, or "Behind seat 3, hard 15".
 function handCaption(decision: HandDecision): string {
-	const name = decision.isSplitHand ? `Hand ${decision.handIndex + 1}` : 'Your hand';
 	const ranks = decision.playerCards.map(card => card.rank);
 
-	return `${name}, ${handLabel(ranks, decision.canSplit).toLowerCase()}`;
+	return `${handName(decision)}, ${handLabel(ranks, decision.canSplit).toLowerCase()}`;
 }
 
 type HandAdviceProps = {
@@ -65,6 +74,10 @@ export function HandAdvice({ decision, isWaiting }: HandAdviceProps): ReactEleme
 					<p className="text-xs text-muted-foreground">
 						Count play. Book says {actionLabel(decision.bookAction).toLowerCase()}.
 					</p>
+				)}
+
+				{decision.isBetBehind && (
+					<p className="text-xs text-muted-foreground">The seated player makes this call for you.</p>
 				)}
 			</div>
 

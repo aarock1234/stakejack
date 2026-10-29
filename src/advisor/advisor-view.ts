@@ -1,14 +1,19 @@
 import type { Wallet } from '@/game/api-responses';
-import { bestTotal, handPoints, isBust, isNatural, Rank } from '@/game/cards';
+import { Rank } from '@/game/cards';
 import type { CardFace } from '@/game/cards';
 import type { DecisionOffer, Hand } from '@/game/messages';
 import type { TableTracker } from '@/game/table-tracker';
 import { adviseHand, adviseInsurance } from '@/strategy/advice';
 import type { Action, DecisionSituation, HandAdvice, InsuranceAdvice } from '@/strategy/advice';
-import { adviseBet, estimateEdge, SHOE_SIZE, trueCount } from '@/strategy/betting';
+import { adviseBet } from '@/strategy/betting';
 import type { BetAdvice } from '@/strategy/betting';
-import { handOutlook } from '@/strategy/outlook';
-import type { HandOutlook } from '@/strategy/outlook';
+
+import { describeDealer, describeOutlooks } from './outlook-view';
+import type { DealerOutlook, SeatOutlook, SeatRoles } from './outlook-view';
+import { EMPTY_SESSION } from './session-tracker';
+import type { SessionSummary } from './session-tracker';
+import { currentTrueCount, describeShoe, trackedShoeCards, UNTRACKED_SHOE } from './shoe-view';
+import type { ShoeSummary } from './shoe-view';
 
 export const AdvisorStatus = {
 	// No game traffic has been seen in this frame yet.
@@ -22,6 +27,8 @@ export type AdvisorStatus = (typeof AdvisorStatus)[keyof typeof AdvisorStatus];
 
 export type HandDecision = {
 	seatNumber: number;
+	// The player only bets behind this hand, so its owner makes the moves.
+	isBetBehind: boolean;
 	handIndex: number;
 	isSplitHand: boolean;
 	// The game is waiting on this hand now; other offered hands can only be decided in advance.
@@ -40,51 +47,22 @@ export type BetRecommendation = BetAdvice & {
 	trueCount?: number;
 };
 
-// How one hand at the table stands against the dealer right now.
-export type HandStanding = {
-	handIndex: number;
-	total: number;
-	isBust: boolean;
-	// The player is still acting on this hand, so its chances are not yet meaningful.
-	isInPlay: boolean;
-	// Chances if the hand stands as it is now.
-	outlook: HandOutlook;
-};
-
-export type SeatOutlook = {
-	seatNumber: number;
-	isOwnSeat: boolean;
-	hands: readonly HandStanding[];
-};
-
-// The state of the shoe, shown whenever there is nothing to decide.
-export type ShoeSummary = {
-	// Omitted until a fresh shoe has been followed from its first card.
-	trueCount?: number;
-	cardsDealt: number;
-	shoeSize: number;
-	edge: number;
-};
-
 export type AdvisorView = {
 	status: AdvisorStatus;
 	wallet?: Wallet;
-	// Profit or loss since the advisor first saw the balance.
-	sessionChange?: number;
+	session: SessionSummary;
 	shoe: ShoeSummary;
 	bet?: BetRecommendation;
 	insurance?: InsuranceAdvice;
 	decisions: readonly HandDecision[];
 	outlooks: readonly SeatOutlook[];
+	dealer?: DealerOutlook;
 };
 
 export const CONNECTING_VIEW: AdvisorView = {
 	status: AdvisorStatus.CONNECTING,
-	shoe: {
-		cardsDealt: 0,
-		shoeSize: SHOE_SIZE,
-		edge: estimateEdge(undefined),
-	},
+	session: EMPTY_SESSION,
+	shoe: UNTRACKED_SHOE,
 	decisions: [],
 	outlooks: [],
 };
@@ -137,7 +115,16 @@ function adviseWithShoe(
 	};
 }
 
-function describeSeatDecisions(table: TableTracker, seatNumber: number, round: RoundContext): HandDecision[] {
+// A seat the player has money on: their own, or one they bet behind.
+type PlayedSeat = {
+	seatNumber: number;
+	isBetBehind: boolean;
+};
+
+function describeSeatDecisions(table: TableTracker, seat: PlayedSeat, round: RoundContext): HandDecision[] {
+	const { seatNumber } = seat;
+
+	// The cash out quoted on a hand is priced on its owner's main bet, even for players betting behind.
 	const stake = table.mainBetAt(seatNumber);
 	const hands = table.handsAt(seatNumber);
 	const decisions: HandDecision[] = [];
@@ -159,6 +146,7 @@ function describeSeatDecisions(table: TableTracker, seatNumber: number, round: R
 
 		decisions.push({
 			seatNumber,
+			isBetBehind: seat.isBetBehind,
 			handIndex,
 			isSplitHand: hands.length > 1,
 			isActive: hand.activeHand === true,
@@ -200,71 +188,6 @@ function describeInsurance(
 	return adviseInsurance(shoeCardsOut ?? [...ranksOf(startingHand), Rank.ACE]);
 }
 
-function trackedShoeCards(table: TableTracker): Rank[] | undefined {
-	return table.shoe.isTrackedFromStart ? table.shoe.seenRanks() : undefined;
-}
-
-// Outlooks for every hand with at least two cards, once the dealer shows a card.
-function describeOutlooks(table: TableTracker, ownSeats: readonly number[]): SeatOutlook[] {
-	const dealerCards = table.dealerCards();
-
-	if (dealerCards.length === 0) {
-		return [];
-	}
-
-	const cardsOut = trackedShoeCards(table) ?? table.roundRanks();
-	const outlooks: SeatOutlook[] = [];
-
-	for (const seatNumber of table.seatsInPlay()) {
-		const hands = table.handsAt(seatNumber);
-		const standings: HandStanding[] = [];
-
-		for (const [handIndex, hand] of hands.entries()) {
-			if (hand.cards.length < 2) {
-				continue;
-			}
-
-			const playerCards = ranksOf(hand);
-			const points = handPoints(playerCards);
-
-			standings.push({
-				handIndex,
-				total: bestTotal(points),
-				isBust: isBust(points),
-				isInPlay: !hand.isDealingCompleted && !isBust(points) && !isNatural(points),
-				outlook: handOutlook({
-					playerCards,
-					dealerCards,
-					isSplitHand: hands.length > 1,
-					cardsOut,
-				}),
-			});
-		}
-
-		if (standings.length > 0) {
-			outlooks.push({
-				seatNumber,
-				isOwnSeat: ownSeats.includes(seatNumber),
-				hands: standings,
-			});
-		}
-	}
-
-	return outlooks;
-}
-
-function describeShoe(table: TableTracker): ShoeSummary {
-	const shoeCards = trackedShoeCards(table);
-	const count = shoeCards ? trueCount(shoeCards) : undefined;
-
-	return {
-		trueCount: count,
-		cardsDealt: shoeCards?.length ?? 0,
-		shoeSize: SHOE_SIZE,
-		edge: estimateEdge(count),
-	};
-}
-
 function describeBet(table: TableTracker): BetRecommendation | undefined {
 	const { wallet, limits } = table;
 
@@ -272,8 +195,7 @@ function describeBet(table: TableTracker): BetRecommendation | undefined {
 		return undefined;
 	}
 
-	const shoeCards = trackedShoeCards(table);
-	const count = shoeCards ? trueCount(shoeCards) : undefined;
+	const count = currentTrueCount(table);
 
 	return {
 		...adviseBet({
@@ -285,23 +207,46 @@ function describeBet(table: TableTracker): BetRecommendation | undefined {
 	};
 }
 
-export function describeTable(table: TableTracker): AdvisorView {
+// The player's own seats first, then any they bet behind.
+function describePlayedSeats(roles: SeatRoles): PlayedSeat[] {
+	const owned = roles.ownSeats.map(seatNumber => ({
+		seatNumber,
+		isBetBehind: false,
+	}));
+
+	const behind = roles.betBehindSeats.map(seatNumber => ({
+		seatNumber,
+		isBetBehind: true,
+	}));
+
+	return [...owned, ...behind];
+}
+
+export function describeTable(table: TableTracker, session: SessionSummary): AdvisorView {
 	if (!table.hasGameTraffic) {
 		return CONNECTING_VIEW;
 	}
 
 	const seats = table.ownSeats();
 
+	const roles: SeatRoles = {
+		ownSeats: seats,
+		betBehindSeats: table.betBehindSeats(),
+	};
+
 	// What every view shares, seated or not.
 	const tableView = {
 		wallet: table.wallet,
-		sessionChange: table.sessionChange,
+		session,
 		shoe: describeShoe(table),
 		bet: describeBet(table),
-		outlooks: describeOutlooks(table, seats),
+		outlooks: describeOutlooks(table, roles),
+		dealer: describeDealer(table),
 	};
 
-	if (seats.length === 0) {
+	const playedSeats = describePlayedSeats(roles);
+
+	if (playedSeats.length === 0) {
 		return {
 			...tableView,
 			status: AdvisorStatus.WATCHING,
@@ -314,8 +259,8 @@ export function describeTable(table: TableTracker): AdvisorView {
 	const shoeCardsOut = trackedShoeCards(table);
 
 	const decisions = dealerUpCard
-		? seats.flatMap(seatNumber =>
-				describeSeatDecisions(table, seatNumber, {
+		? playedSeats.flatMap(seat =>
+				describeSeatDecisions(table, seat, {
 					dealerUpCard,
 					shoeCardsOut,
 				})

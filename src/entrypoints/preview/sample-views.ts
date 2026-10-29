@@ -1,5 +1,11 @@
 import { AdvisorStatus, CONNECTING_VIEW } from '@/advisor/advisor-view';
-import type { AdvisorView, HandDecision, SeatOutlook } from '@/advisor/advisor-view';
+import type { AdvisorView, HandDecision } from '@/advisor/advisor-view';
+import { dealerOutlook, SeatRole } from '@/advisor/outlook-view';
+import type { SeatOutlook } from '@/advisor/outlook-view';
+import { EMPTY_SESSION } from '@/advisor/session-tracker';
+import type { SessionSummary } from '@/advisor/session-tracker';
+import { UNTRACKED_SHOE } from '@/advisor/shoe-view';
+import type { ShoeSummary } from '@/advisor/shoe-view';
 import { cardFromScanCode, Rank } from '@/game/cards';
 import type { CardFace } from '@/game/cards';
 import { adviseHand, adviseInsurance } from '@/strategy/advice';
@@ -29,17 +35,30 @@ const LIMITS = {
 	maximumBet: 5000,
 };
 
-const TRACKED_SHOE = {
-	trueCount: 2.4,
+// Deep into a shoe rich in tens and aces, so the count favours the player.
+const TRACKED_SHOE: ShoeSummary = {
+	trueCount: 2.5,
+	runningCount: 11,
+	decksRemaining: 4.4,
+	reshuffle: {
+		cardsLeft: 21,
+		roundsLeft: 1,
+	},
 	cardsDealt: 187,
 	shoeSize: SHOE_SIZE,
-	edge: estimateEdge(2.4),
+	edge: estimateEdge(2.5),
 };
 
-const UNTRACKED_SHOE = {
-	cardsDealt: 0,
-	shoeSize: SHOE_SIZE,
-	edge: estimateEdge(undefined),
+const SESSION: SessionSummary = {
+	roundsPlayed: 18,
+	wagered: 212,
+	net: 42.5,
+	expected: -2.85,
+	moves: {
+		movesPlayed: 16,
+		movesMatched: 15,
+		cost: 1.2,
+	},
 };
 
 type DecisionSample = {
@@ -58,6 +77,7 @@ function decision(sample: DecisionSample): HandDecision {
 
 	return {
 		seatNumber: 3,
+		isBetBehind: false,
 		handIndex: sample.handIndex ?? 0,
 		isSplitHand: sample.isSplitHand ?? false,
 		isActive: sample.isActive ?? true,
@@ -88,16 +108,48 @@ const NINETEEN_AGAINST_SIXTEEN = handOutlook({
 	cardsOut: [Rank.TEN, Rank.NINE, Rank.SIX, Rank.TEN],
 });
 
+// A standing 17 behind another player, against the same dealer.
+const SEVENTEEN_AGAINST_SIXTEEN = handOutlook({
+	playerCards: [Rank.TEN, Rank.SEVEN],
+	dealerCards: [Rank.SIX, Rank.TEN],
+	isSplitHand: false,
+	cardsOut: [Rank.TEN, Rank.NINE, Rank.TEN, Rank.SEVEN, Rank.SIX, Rank.TEN],
+});
+
+// The dealer turned a ten under their six and has to draw.
+const DEALER_ON_SIXTEEN = dealerOutlook(
+	[card('6H1'), card('KC2')],
+	[Rank.TEN, Rank.NINE, Rank.TEN, Rank.SEVEN, Rank.SIX, Rank.TEN]
+);
+
 const OWN_OUTLOOK: SeatOutlook = {
 	seatNumber: 3,
-	isOwnSeat: true,
+	role: SeatRole.OWN,
 	hands: [
 		{
 			handIndex: 0,
+			cards: [card('KS1'), card('9H2')],
 			total: 19,
+			isSoft: false,
 			isBust: false,
 			isInPlay: false,
 			outlook: NINETEEN_AGAINST_SIXTEEN,
+		},
+	],
+};
+
+const BEHIND_OUTLOOK: SeatOutlook = {
+	seatNumber: 5,
+	role: SeatRole.BEHIND,
+	hands: [
+		{
+			handIndex: 0,
+			cards: [card('QD3'), card('7C4')],
+			total: 17,
+			isSoft: false,
+			isBust: false,
+			isInPlay: false,
+			outlook: SEVENTEEN_AGAINST_SIXTEEN,
 		},
 	],
 };
@@ -127,6 +179,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		view: {
 			status: AdvisorStatus.SEATED,
 			wallet: WALLET,
+			session: SESSION,
 			shoe: TRACKED_SHOE,
 			decisions: [
 				decision({
@@ -144,6 +197,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		view: {
 			status: AdvisorStatus.SEATED,
 			wallet: WALLET,
+			session: SESSION,
 			shoe: TRACKED_SHOE,
 			decisions: [
 				decision({
@@ -169,6 +223,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		view: {
 			status: AdvisorStatus.SEATED,
 			wallet: WALLET,
+			session: SESSION,
 			shoe: UNTRACKED_SHOE,
 			insurance: adviseInsurance([Rank.TEN, Rank.EIGHT, Rank.ACE]),
 			decisions: [],
@@ -181,6 +236,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		view: {
 			status: AdvisorStatus.SEATED,
 			wallet: WALLET,
+			session: SESSION,
 			shoe: TRACKED_SHOE,
 			bet: {
 				...adviseBet({
@@ -200,10 +256,11 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		view: {
 			status: AdvisorStatus.SEATED,
 			wallet: WALLET,
-			sessionChange: 42.5,
+			session: SESSION,
 			shoe: TRACKED_SHOE,
 			decisions: [],
-			outlooks: [OWN_OUTLOOK],
+			outlooks: [OWN_OUTLOOK, BEHIND_OUTLOOK],
+			dealer: DEALER_ON_SIXTEEN,
 		},
 	},
 	{
@@ -211,6 +268,7 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 		title: 'Watching',
 		view: {
 			status: AdvisorStatus.WATCHING,
+			session: EMPTY_SESSION,
 			shoe: UNTRACKED_SHOE,
 			decisions: [],
 			outlooks: [],
@@ -223,15 +281,20 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 	},
 ];
 
+// The dealer's chip for the preview's table strip.
+export const PREVIEW_DEALER = DEALER_ON_SIXTEEN;
+
 // Outlooks for the seat strip at the bottom of the preview, one per kind of result.
 export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 	{
 		seatNumber: 0,
-		isOwnSeat: false,
+		role: SeatRole.OTHER,
 		hands: [
 			{
 				handIndex: 0,
-				total: 14,
+				cards: [card('1C1'), card('4D2')],
+				total: 15,
+				isSoft: true,
 				isBust: false,
 				isInPlay: true,
 				outlook: NINETEEN_AGAINST_SIXTEEN,
@@ -241,15 +304,16 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 	{
 		...OWN_OUTLOOK,
 		seatNumber: 1,
-		isOwnSeat: false,
 	},
 	{
 		seatNumber: 2,
-		isOwnSeat: false,
+		role: SeatRole.OTHER,
 		hands: [
 			{
 				handIndex: 0,
+				cards: [card('KH1'), card('4S2'), card('QD3')],
 				total: 24,
+				isSoft: false,
 				isBust: true,
 				isInPlay: false,
 				outlook: {
@@ -262,11 +326,13 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 	},
 	{
 		seatNumber: 4,
-		isOwnSeat: false,
+		role: SeatRole.OTHER,
 		hands: [
 			{
 				handIndex: 0,
+				cards: [card('QC1'), card('JS2')],
 				total: 20,
+				isSoft: false,
 				isBust: false,
 				isInPlay: false,
 				outlook: {
@@ -277,4 +343,5 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 			},
 		],
 	},
+	BEHIND_OUTLOOK,
 ];

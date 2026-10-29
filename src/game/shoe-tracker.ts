@@ -7,6 +7,19 @@ export type ShoeSnapshot = {
 	cards: readonly (readonly [string, Rank])[];
 };
 
+// Cards are keyed "round:sequence", which saved snapshots keep too.
+const CARD_KEY_SEPARATOR = ':';
+
+function cardKey(gameId: string, sequence: number): string {
+	return `${gameId}${CARD_KEY_SEPARATOR}${sequence}`;
+}
+
+function roundOfCardKey(key: string): string {
+	const [gameId = key] = key.split(CARD_KEY_SEPARATOR);
+
+	return gameId;
+}
+
 // Remembers every card dealt from the current shoe. A count is only meaningful when the shoe was
 // followed from its first card, either live or by resuming a snapshot saved earlier for the same shoe.
 export class ShoeTracker {
@@ -30,6 +43,17 @@ export class ShoeTracker {
 
 	seenRanks(): Rank[] {
 		return [...this.#seenCards.values()];
+	}
+
+	// Rounds dealt from the shoe so far, read from the round each seen card was keyed under.
+	roundCount(): number {
+		const rounds = new Set<string>();
+
+		for (const key of this.#seenCards.keys()) {
+			rounds.add(roundOfCardKey(key));
+		}
+
+		return rounds.size;
 	}
 
 	startNewShoe(shoeCode: string): void {
@@ -81,7 +105,7 @@ export class ShoeTracker {
 	// Seat snapshots repeat earlier cards, so each card is keyed by its round and sequence number.
 	record(gameId: string, cards: readonly DealtCard[]): void {
 		for (const card of cards) {
-			this.#seenCards.set(`${gameId}:${card.sequence}`, card.rank);
+			this.#seenCards.set(cardKey(gameId, card.sequence), card.rank);
 		}
 	}
 }

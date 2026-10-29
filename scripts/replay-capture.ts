@@ -37,6 +37,7 @@ function describeDecision(decision: HandDecision): string {
 	const { advice } = decision;
 	const hand = decision.isSplitHand ? `Hand ${decision.handIndex + 1} · ` : '';
 	const active = decision.isActive ? ' [active]' : '';
+	const behind = decision.isBetBehind ? ' [behind]' : '';
 	const book = decision.bookAction ? ` [book: ${actionLabel(decision.bookAction)}]` : '';
 	const situation = `${hand}${handLabel(
 		decision.playerCards.map(card => card.rank),
@@ -47,7 +48,7 @@ function describeDecision(decision: HandDecision): string {
 		.map(option => `${actionLabel(option.action)} ${formatPercent(option.expectedValue)}`)
 		.join(', ');
 
-	return `seat ${decision.seatNumber} ${situation}${active}: ${actionLabel(advice.best.action)}${book} (${options})`;
+	return `seat ${decision.seatNumber} ${situation}${behind}${active}: ${actionLabel(advice.best.action)}${book} (${options})`;
 }
 
 function describeView(view: AdvisorView): string[] {
@@ -92,7 +93,14 @@ async function main(): Promise<void> {
 		}
 	}
 
-	console.log(`final status: ${store.getSnapshot().status}`);
+	const { status, session } = store.getSnapshot();
+	const { moves } = session;
+
+	console.log(`final status: ${status}`);
+	console.log(
+		`session: ${session.roundsPlayed} rounds, wagered ${session.wagered}, net ${session.net}, expected ${session.expected.toFixed(2)}`
+	);
+	console.log(`moves: ${moves.movesMatched} of ${moves.movesPlayed} like the advice, cost ${moves.cost.toFixed(2)}`);
 }
 
 await main();

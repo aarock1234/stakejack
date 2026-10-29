@@ -16,6 +16,9 @@ export const DealerResult = {
 // The dealer finishes on a standing total, busts, or turns over a natural.
 export type DealerResult = StandingTotal | (typeof DealerResult)[keyof typeof DealerResult];
 
+// Every way the dealer can finish, from the lowest standing total to a bust.
+export const DEALER_RESULTS: readonly DealerResult[] = [...STANDING_TOTALS, DealerResult.BLACKJACK, DealerResult.BUST];
+
 export type DealerOutcomes = ReadonlyMap<DealerResult, number>;
 
 type MutableOutcomes = Map<DealerResult, number>;

@@ -1,61 +1,32 @@
 import { Fragment } from 'react';
-import type { CSSProperties, ReactElement } from 'react';
+import type { CSSProperties, ReactElement, Ref } from 'react';
 
-import { Layers, Scale, Spade, Wallet } from 'lucide-react';
+import { ChevronDown, ChevronUp, Spade, Wallet } from 'lucide-react';
 
 import { AdvisorStatus } from '@/advisor/advisor-view';
-import type { AdvisorView, SeatOutlook, ShoeSummary } from '@/advisor/advisor-view';
+import type { AdvisorView } from '@/advisor/advisor-view';
+import type { SeatOutlook } from '@/advisor/outlook-view';
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 
 import { BetAdvice } from './bet-advice';
-import { formatCount, formatMoney, formatShare } from './format';
+import { formatMoney } from './format';
 import { HandAdvice } from './hand-advice';
 import { InsuranceAdvice } from './insurance-advice';
+import { ShoeStrip } from './shoe-strip';
 import { TableOutlooks } from './table-outlooks';
 import { TableOverview } from './table-overview';
 import type { DragHandle } from './use-panel-position';
 
-type ShoeStripProps = {
-	shoe: ShoeSummary;
-};
-
-// Always visible: where the count stands and who holds the edge on the next hand. Without a count the edge
-// is the table's base house edge; with one it is adjusted for the cards left.
-function ShoeStrip({ shoe }: ShoeStripProps): ReactElement {
-	const isCounted = shoe.trueCount !== undefined;
-	const count = shoe.trueCount === undefined ? 'No count yet' : `Count ${formatCount(shoe.trueCount)}`;
-	const holder = shoe.edge > 0 ? 'Your edge' : 'House';
-	const edge = `${holder} ${formatShare(Math.abs(shoe.edge))}`;
-
-	return (
-		<div className="flex items-center justify-between gap-3 border-t px-4 py-2 text-xs text-muted-foreground">
-			<span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap">
-				<Layers aria-hidden className="size-3.5" />
-				<span className="tabular-nums">{count}</span>
-			</span>
-			<span
-				className={cn(
-					'flex shrink-0 items-center gap-1.5 whitespace-nowrap',
-					shoe.edge > 0 && 'text-outcome-win'
-				)}
-			>
-				<Scale aria-hidden className="size-3.5" />
-				<span className="tabular-nums">{edge}</span>
-				<span className="text-muted-foreground/70">{isCounted ? 'Counted' : 'Base'}</span>
-			</span>
-		</div>
-	);
-}
-
 type PanelBodyProps = {
 	view: AdvisorView;
+	isDealerOnTable: boolean;
 };
 
 // The one thing that matters right now: the hand being played, the insurance offer, the next bet, or,
-// with nothing to decide, an overview of the player's hand, the shoe, and the session.
-function PanelBody({ view }: PanelBodyProps): ReactElement {
+// with nothing to decide, an overview of the player's hands, the dealer, the shoe, and the session.
+function PanelBody({ view, isDealerOnTable }: PanelBodyProps): ReactElement {
 	if (view.decisions.length > 0) {
 		const isAnyHandActive = view.decisions.some(decision => decision.isActive);
 
@@ -79,25 +50,62 @@ function PanelBody({ view }: PanelBodyProps): ReactElement {
 		return <BetAdvice bet={view.bet} currency={view.wallet.currency} />;
 	}
 
-	return <TableOverview view={view} />;
+	return <TableOverview view={view} isDealerOnTable={isDealerOnTable} />;
+}
+
+// Minimising is only offered on the live panel, which remembers the choice.
+export type CollapseControl = {
+	isCollapsed: boolean;
+	onToggle: () => void;
+};
+
+function MinimiseButton({ isCollapsed, onToggle }: CollapseControl): ReactElement {
+	const Icon = isCollapsed ? ChevronDown : ChevronUp;
+
+	return (
+		<button
+			type="button"
+			aria-label={isCollapsed ? 'Show the full panel' : 'Minimise the panel'}
+			aria-expanded={!isCollapsed}
+			onClick={onToggle}
+			className="grid size-5 cursor-pointer place-items-center rounded-md transition-colors hover:bg-muted hover:text-foreground"
+		>
+			<Icon aria-hidden className="size-3.5" />
+		</button>
+	);
 }
 
 type PanelCardProps = {
+	ref?: Ref<HTMLDivElement>;
 	view: AdvisorView;
 	// Seats the game has not drawn where outlooks could rest beside them; listed in the panel instead.
 	unanchoredOutlooks: readonly SeatOutlook[];
+	// The dealer's chances rest on the table beside their score, so the panel leaves them out.
+	isDealerOnTable?: boolean;
 	// Makes the header a handle for moving the panel around the table.
 	dragHandle?: DragHandle;
+	collapse?: CollapseControl;
 	className?: string;
 	style?: CSSProperties;
 };
 
 // The panel as drawn, independent of where its data comes from.
-export function PanelCard({ view, unanchoredOutlooks, dragHandle, className, style }: PanelCardProps): ReactElement {
+export function PanelCard({
+	ref,
+	view,
+	unanchoredOutlooks,
+	isDealerOnTable = false,
+	dragHandle,
+	collapse,
+	className,
+	style,
+}: PanelCardProps): ReactElement {
 	const isConnecting = view.status === AdvisorStatus.CONNECTING;
+	const isCollapsed = collapse?.isCollapsed === true;
 
 	return (
 		<Card
+			ref={ref}
 			aria-label="Stakejack advice"
 			aria-live="polite"
 			className={cn(
@@ -134,14 +142,16 @@ export function PanelCard({ view, unanchoredOutlooks, dragHandle, className, sty
 					) : (
 						headerHint(view.status)
 					)}
+					{collapse && <MinimiseButton isCollapsed={collapse.isCollapsed} onToggle={collapse.onToggle} />}
 				</CardAction>
 			</CardHeader>
 
 			{!isConnecting && <ShoeStrip shoe={view.shoe} />}
 
-			{!isConnecting && (
-				<CardContent className="flex flex-col gap-5 border-t px-4 py-4">
-					<PanelBody view={view} />
+			{!isConnecting && !isCollapsed && (
+				// Scrolls on its own when the game window is shorter than the panel, keeping the header in reach.
+				<CardContent className="flex min-h-0 flex-col gap-5 overflow-y-auto border-t px-4 py-4">
+					<PanelBody view={view} isDealerOnTable={isDealerOnTable} />
 
 					{unanchoredOutlooks.length > 0 && (
 						<>

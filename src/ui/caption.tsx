@@ -40,7 +40,7 @@ export function Caption({ children, info, className }: CaptionProps): ReactEleme
 			{info && isOpen && (
 				<p
 					id={infoId}
-					className="rounded-md bg-muted/60 px-2.5 py-2 text-xs leading-relaxed text-muted-foreground"
+					className="rounded-md bg-muted/60 px-2.5 py-2 text-xs leading-relaxed whitespace-pre-line text-muted-foreground"
 				>
 					{info}
 				</p>

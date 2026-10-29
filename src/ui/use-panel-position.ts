@@ -1,81 +1,133 @@
-import { useEffect, useRef, useState } from 'react';
-import type { PointerEvent } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { MouseEvent, PointerEvent, RefCallback } from 'react';
 
 import { storage } from 'wxt/utils/storage';
-import { z } from 'zod';
 
-// Where the panel sits, measured from the top-right corner so it stays beside the game's controls as the
-// window resizes.
-export type PanelPosition = {
-	top: number;
-	right: number;
+import {
+	DEFAULT_PLACEMENT,
+	clampToViewport,
+	legacyPlacementSchema,
+	panelPlacementSchema,
+	placementToPoint,
+	pointToPlacement,
+} from './panel-placement';
+import type { PanelPlacement, PanelPoint, Size } from './panel-placement';
+
+const savedPlacement = storage.defineItem<unknown>('local:panelPosition');
+
+const EMPTY_SIZE: Size = {
+	width: 0,
+	height: 0,
 };
-
-// Below the game's lobby button and chat box, which occupy the top-right corner.
-const DEFAULT_POSITION: PanelPosition = {
-	top: 112,
-	right: 12,
-};
-
-// How much of the panel must stay on screen, so it can always be dragged back.
-const VISIBLE_MARGIN_PX = 48;
-
-const panelPositionSchema = z.object({
-	top: z.number(),
-	right: z.number(),
-});
-
-const savedPosition = storage.defineItem<unknown>('local:panelPosition');
 
 type DragStart = {
 	pointerX: number;
 	pointerY: number;
-	position: PanelPosition;
-	panelWidth: number;
+	point: PanelPoint;
 };
 
 export type DragHandle = {
 	onPointerDown(event: PointerEvent<HTMLElement>): void;
 	onPointerMove(event: PointerEvent<HTMLElement>): void;
 	onPointerUp(event: PointerEvent<HTMLElement>): void;
-	onDoubleClick(): void;
+	onDoubleClick(event: MouseEvent<HTMLElement>): void;
 };
 
-function clampToViewport(position: PanelPosition, panelWidth: number): PanelPosition {
-	return {
-		top: Math.min(Math.max(position.top, 0), window.innerHeight - VISIBLE_MARGIN_PX),
-		right: Math.min(
-			Math.max(position.right, VISIBLE_MARGIN_PX - panelWidth),
-			window.innerWidth - VISIBLE_MARGIN_PX
-		),
-	};
+// Buttons in the header, such as minimise, keep their clicks instead of starting a drag.
+function isOnButton(target: EventTarget): boolean {
+	return target instanceof Element && target.closest('button') !== null;
 }
 
-function savePosition(position: PanelPosition): void {
-	savedPosition.setValue(position).catch((error: unknown) => {
+function readSavedPlacement(value: unknown): PanelPlacement | undefined {
+	const current = panelPlacementSchema.safeParse(value);
+
+	if (current.success) {
+		return current.data;
+	}
+
+	const legacy = legacyPlacementSchema.safeParse(value);
+
+	return legacy.success ? legacy.data : undefined;
+}
+
+function savePlacement(placement: PanelPlacement): void {
+	savedPlacement.setValue(placement).catch((error: unknown) => {
 		console.warn('stakejack: could not save the panel position', error);
 	});
 }
 
-// Lets the panel be dragged by its header and remembers where it was left. Double-clicking the header
-// puts it back in its default place.
-export function usePanelPosition(): {
-	position: PanelPosition;
-	dragHandle: DragHandle;
-} {
-	const [position, setPosition] = useState(DEFAULT_POSITION);
-	const dragStart = useRef<DragStart | undefined>(undefined);
+function currentViewport(): Size {
+	return {
+		width: window.innerWidth,
+		height: window.innerHeight,
+	};
+}
+
+// The game frame's size, followed as the browser window or the game layout changes.
+function useViewportSize(): Size {
+	const [viewport, setViewport] = useState(currentViewport);
+
+	useEffect(() => {
+		function update(): void {
+			setViewport(currentViewport());
+		}
+
+		window.addEventListener('resize', update);
+
+		return () => {
+			window.removeEventListener('resize', update);
+		};
+	}, []);
+
+	return viewport;
+}
+
+// The panel's own size, which changes with what it shows.
+function useElementSize(element: HTMLElement | null): Size {
+	const [size, setSize] = useState(EMPTY_SIZE);
+
+	// Measured before paint so the panel never flashes in the wrong place.
+	useLayoutEffect(() => {
+		if (!element) {
+			return;
+		}
+
+		function measure(target: HTMLElement): void {
+			setSize({
+				width: target.offsetWidth,
+				height: target.offsetHeight,
+			});
+		}
+
+		measure(element);
+
+		const observer = new ResizeObserver(() => {
+			measure(element);
+		});
+
+		observer.observe(element);
+
+		return () => {
+			observer.disconnect();
+		};
+	}, [element]);
+
+	return size;
+}
+
+function useSavedPlacement(): [PanelPlacement, (placement: PanelPlacement) => void] {
+	const [placement, setPlacement] = useState(DEFAULT_PLACEMENT);
 
 	useEffect(() => {
 		let isCurrent = true;
 
-		savedPosition
+		savedPlacement
 			.getValue()
 			.then(value => {
-				const result = panelPositionSchema.safeParse(value);
+				const saved = readSavedPlacement(value);
 
-				if (isCurrent && result.success) {
-					setPosition(result.data);
+				if (isCurrent && saved) {
+					setPlacement(saved);
 				}
 			})
 			.catch((error: unknown) => {
@@ -87,20 +139,36 @@ export function usePanelPosition(): {
 		};
 	}, []);
 
+	return [placement, setPlacement];
+}
+
+// Lets the panel be dragged by its header and remembers where it was left. The whole panel stays on
+// screen however the window is resized, and returns to its spot when there is room again.
+// Double-clicking the header puts it back in its default place.
+export function usePanelPosition(): {
+	panelRef: RefCallback<HTMLElement>;
+	point: PanelPoint;
+	dragHandle: DragHandle;
+} {
+	const [panel, setPanel] = useState<HTMLElement | null>(null);
+	const [placement, setPlacement] = useSavedPlacement();
+	const dragStart = useRef<DragStart | undefined>(undefined);
+
+	const viewport = useViewportSize();
+	const panelSize = useElementSize(panel);
+	const point = placementToPoint(placement, panelSize, viewport);
+
 	const dragHandle: DragHandle = {
 		onPointerDown(event) {
-			if (event.button !== 0) {
+			if (event.button !== 0 || isOnButton(event.target)) {
 				return;
 			}
-
-			const panel = event.currentTarget.closest('[data-slot="card"]');
 
 			event.currentTarget.setPointerCapture(event.pointerId);
 			dragStart.current = {
 				pointerX: event.clientX,
 				pointerY: event.clientY,
-				position,
-				panelWidth: panel?.getBoundingClientRect().width ?? 0,
+				point,
 			};
 		},
 
@@ -111,12 +179,16 @@ export function usePanelPosition(): {
 				return;
 			}
 
-			const moved = {
-				top: start.position.top + event.clientY - start.pointerY,
-				right: start.position.right - (event.clientX - start.pointerX),
-			};
+			const moved = clampToViewport(
+				{
+					left: start.point.left + event.clientX - start.pointerX,
+					top: start.point.top + event.clientY - start.pointerY,
+				},
+				panelSize,
+				viewport
+			);
 
-			setPosition(clampToViewport(moved, start.panelWidth));
+			setPlacement(pointToPlacement(moved, panelSize, viewport));
 		},
 
 		onPointerUp(event) {
@@ -126,17 +198,22 @@ export function usePanelPosition(): {
 
 			dragStart.current = undefined;
 			event.currentTarget.releasePointerCapture(event.pointerId);
-			savePosition(position);
+			savePlacement(placement);
 		},
 
-		onDoubleClick() {
-			setPosition(DEFAULT_POSITION);
-			savePosition(DEFAULT_POSITION);
+		onDoubleClick(event) {
+			if (isOnButton(event.target)) {
+				return;
+			}
+
+			setPlacement(DEFAULT_PLACEMENT);
+			savePlacement(DEFAULT_PLACEMENT);
 		},
 	};
 
 	return {
-		position,
+		panelRef: setPanel,
+		point,
 		dragHandle,
 	};
 }

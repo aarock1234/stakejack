@@ -34,14 +34,22 @@ function hiLoValue(rank: Rank): number {
 	return 1;
 }
 
-// Running count divided by the decks still in the shoe.
 export const SHOE_SIZE = TABLE_RULES.deckCount * CARDS_PER_DECK;
 
-export function trueCount(seenRanks: readonly Rank[]): number {
-	const runningCount = seenRanks.reduce((count, rank) => count + hiLoValue(rank), 0);
-	const decksRemaining = Math.max((SHOE_SIZE - seenRanks.length) / CARDS_PER_DECK, 0.5);
+// Hi-Lo: every two to six seen adds one, every ten or ace takes one away. The higher it climbs, the
+// richer the rest of the shoe is in tens and aces, which favour the player.
+export function runningCount(seenRanks: readonly Rank[]): number {
+	return seenRanks.reduce((count, rank) => count + hiLoValue(rank), 0);
+}
 
-	return runningCount / decksRemaining;
+// Never below half a deck, so the true count stays sensible right before a shuffle.
+export function decksRemaining(seenRanks: readonly Rank[]): number {
+	return Math.max((SHOE_SIZE - seenRanks.length) / CARDS_PER_DECK, 0.5);
+}
+
+// The running count spread over the decks still in the shoe, which is what moves the edge.
+export function trueCount(seenRanks: readonly Rank[]): number {
+	return runningCount(seenRanks) / decksRemaining(seenRanks);
 }
 
 // Estimated player edge on the main bet: -0.006 means the house wins 0.6% of it on average. Without a

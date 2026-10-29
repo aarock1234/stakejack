@@ -26,19 +26,44 @@ type PlayingCardProps = {
 	card: CardFace;
 };
 
+function cardName(card: CardFace): string {
+	return `${card.face} of ${SUIT_NAMES[card.suit]}`;
+}
+
+function inkColor(card: CardFace): string {
+	return isRedSuit(card.suit) ? 'text-card-ink-red' : 'text-card-ink';
+}
+
 // A small paper card: the face in the corner and the suit pip in the middle, as on a real card.
 export function PlayingCard({ card }: PlayingCardProps): ReactElement {
 	return (
 		<span
 			role="img"
-			aria-label={`${card.face} of ${SUIT_NAMES[card.suit]}`}
+			aria-label={cardName(card)}
 			className={cn(
 				'relative inline-flex h-10 w-7 shrink-0 flex-col rounded-[5px] bg-card-paper p-1 font-mono shadow-[0_1px_2px_oklch(0_0_0/45%),inset_0_-1px_0_oklch(0_0_0/12%)]',
-				isRedSuit(card.suit) ? 'text-card-ink-red' : 'text-card-ink'
+				inkColor(card)
 			)}
 		>
 			<span className="text-[11px] leading-none font-semibold tracking-tighter">{card.face}</span>
 			<span className="mt-auto self-end text-sm leading-none">{SUIT_SYMBOLS[card.suit]}</span>
+		</span>
+	);
+}
+
+// A card shrunk to a single line, face then suit, for the chips that rest on the table.
+export function MiniPlayingCard({ card }: PlayingCardProps): ReactElement {
+	return (
+		<span
+			role="img"
+			aria-label={cardName(card)}
+			className={cn(
+				'inline-flex h-4.5 shrink-0 items-center gap-px rounded-[3px] bg-card-paper px-1 font-mono text-[10px] leading-none font-semibold tracking-tighter shadow-[0_1px_1px_oklch(0_0_0/40%)]',
+				inkColor(card)
+			)}
+		>
+			{card.face}
+			<span className="text-[9px]">{SUIT_SYMBOLS[card.suit]}</span>
 		</span>
 	);
 }

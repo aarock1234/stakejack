@@ -1,10 +1,11 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 
+import { DealerOutlookChip } from '@/ui/dealer-outlook';
 import { PanelCard } from '@/ui/panel-card';
 import { SeatOutlookChip } from '@/ui/seat-outlooks';
 
-import { PREVIEW_SAMPLES, PREVIEW_SEATS, SampleId } from './sample-views';
+import { PREVIEW_DEALER, PREVIEW_SAMPLES, PREVIEW_SEATS, SampleId } from './sample-views';
 import type { PreviewSample } from './sample-views';
 
 // Stacks for the capture layout, balanced by hand so the three columns end at similar heights.
@@ -21,10 +22,32 @@ function findSample(id: SampleId): PreviewSample | undefined {
 function SeatChips(): ReactElement {
 	return (
 		<div className="flex flex-wrap items-end gap-3">
+			<DealerOutlookChip dealer={PREVIEW_DEALER} />
 			{PREVIEW_SEATS.map(seat => (
 				<SeatOutlookChip key={seat.seatNumber} seat={seat} />
 			))}
 		</div>
+	);
+}
+
+// The between-decisions panel with its minimise button working, starting minimised.
+function MinimisedSample(): ReactElement | null {
+	const [isCollapsed, setIsCollapsed] = useState(true);
+	const sample = findSample(SampleId.OVERVIEW);
+
+	if (!sample) {
+		return null;
+	}
+
+	return (
+		<PanelCard
+			view={sample.view}
+			unanchoredOutlooks={[]}
+			collapse={{
+				isCollapsed,
+				onToggle: () => setIsCollapsed(collapsed => !collapsed),
+			}}
+		/>
 	);
 }
 
@@ -86,6 +109,11 @@ function GalleryLayout(): ReactElement {
 						<PanelCard view={sample.view} unanchoredOutlooks={[]} />
 					</figure>
 				))}
+
+				<figure className="flex flex-col gap-2">
+					<figcaption className="text-xs text-muted-foreground">Minimised</figcaption>
+					<MinimisedSample />
+				</figure>
 			</div>
 
 			<figure className="mt-10 flex flex-col gap-2">

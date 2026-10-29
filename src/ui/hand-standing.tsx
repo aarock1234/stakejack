@@ -1,10 +1,10 @@
 import type { ReactElement } from 'react';
 
-import type { HandStanding as HandStandingValue } from '@/advisor/advisor-view';
+import type { HandStanding as HandStandingValue } from '@/advisor/outlook-view';
 import { cn } from '@/lib/utils';
 import type { HandOutlook } from '@/strategy/outlook';
 
-import { formatShare } from './format';
+import { formatHandTotal, formatShare } from './format';
 
 export type Verdict = {
 	label: string;
@@ -90,10 +90,15 @@ type HandStandingProps = {
 	standing: HandStandingValue;
 };
 
-// The hand's total and its chance of beating the dealer if it stands, or the settled result.
+// The hand's total and its chance of beating the dealer if it stands, or the settled result. A soft hand
+// still being played shows both of its totals; once it is done, only the one that counts.
 export function HandStanding({ standing }: HandStandingProps): ReactElement {
 	if (standing.isInPlay) {
-		return <span className="font-mono text-xs text-muted-foreground tabular-nums">{standing.total}</span>;
+		return (
+			<span className="font-mono text-xs text-muted-foreground tabular-nums">
+				{formatHandTotal(standing.total, standing.isSoft)}
+			</span>
+		);
 	}
 
 	const verdict = settledVerdict(standing);

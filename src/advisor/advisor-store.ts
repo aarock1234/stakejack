@@ -3,19 +3,22 @@ import { BridgeSource } from '@/game/bridge';
 import type { ApiPath, BridgeMessage } from '@/game/bridge';
 import { parseGameCommand } from '@/game/commands';
 import { MessageKind, parseGameMessage } from '@/game/messages';
+import type { GameMessage } from '@/game/messages';
 import { TableTracker } from '@/game/table-tracker';
 
 import { CONNECTING_VIEW, describeTable } from './advisor-view';
 import type { AdvisorView } from './advisor-view';
+import { SessionTracker } from './session-tracker';
 import type { ShoeHistory } from './shoe-history';
 
 type Listener = () => void;
 
-// Owns the table for one game frame and publishes a fresh view whenever a relevant message arrives.
-// Its subscribe and getSnapshot callbacks follow React's external store contract. With a shoe history,
-// it also saves the shoe each round and resumes it after a reload.
+// Owns the table and the player's session for one game frame, and publishes a fresh view whenever a
+// relevant message arrives. Its subscribe and getSnapshot callbacks follow React's external store
+// contract. With a shoe history, it also saves the shoe each round and resumes it after a reload.
 export class AdvisorStore {
 	readonly #table = new TableTracker();
+	readonly #session = new SessionTracker();
 	readonly #listeners = new Set<Listener>();
 	readonly #history: ShoeHistory | undefined;
 	#view: AdvisorView = CONNECTING_VIEW;
@@ -32,7 +35,7 @@ export class AdvisorStore {
 		this.#resumeShoeIfNeeded();
 
 		if (isRelevant || isFirstGameFrame) {
-			this.#publish(describeTable(this.#table));
+			this.#publish();
 		}
 	}
 
@@ -71,6 +74,7 @@ export class AdvisorStore {
 		}
 
 		this.#table.receive(message);
+		this.#followSession(message);
 
 		// A new round starting is a natural checkpoint: everything dealt so far belongs to the shoe.
 		if (message.kind === MessageKind.BETS_OPENED) {
@@ -78,6 +82,38 @@ export class AdvisorStore {
 		}
 
 		return true;
+	}
+
+	// Feeds the session the player's own bets, payouts, and moves.
+	#followSession(message: GameMessage): void {
+		switch (message.kind) {
+			case MessageKind.BETS_OPENED:
+				this.#session.startRound();
+				break;
+
+			case MessageKind.BET_PLACED:
+				if (message.bet.userId === this.#table.userId) {
+					this.#session.noteBet(message.bet, this.#view.shoe.edge);
+				}
+				break;
+
+			case MessageKind.ROUND_PAID:
+				this.#session.noteRoundPaid(message.gameId, message.amount);
+				break;
+
+			case MessageKind.SEAT_HANDS:
+				if (this.#table.ownSeats().includes(message.seatNumber)) {
+					this.#session.noteHands(message.seatNumber, message.hands);
+				}
+				break;
+
+			// Seating, the shoe, and the betting window only matter to the table.
+			case MessageKind.BETS_CLOSED:
+			case MessageKind.SEAT_TAKEN:
+			case MessageKind.SEAT_LEFT:
+			case MessageKind.SHOE_IDENTIFIED:
+				break;
+		}
 	}
 
 	#saveShoe(): void {
@@ -115,7 +151,7 @@ export class AdvisorStore {
 			})
 			.finally(() => {
 				this.#isLoadingHistory = false;
-				this.#publish(describeTable(this.#table));
+				this.#publish();
 			});
 	}
 
@@ -143,7 +179,10 @@ export class AdvisorStore {
 		return true;
 	}
 
-	#publish(view: AdvisorView): void {
+	#publish(): void {
+		const view = describeTable(this.#table, this.#session.summary);
+
+		this.#session.noteOfferedAdvice(view.decisions, seatNumber => this.#table.mainBetAt(seatNumber));
 		this.#view = view;
 
 		for (const listener of this.#listeners) {

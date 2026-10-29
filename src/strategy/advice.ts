@@ -41,6 +41,29 @@ export type DecisionSituation = {
 	cardsOut?: readonly Rank[];
 };
 
+// Pragmatic Play prices a cash out a few percent under what the hand is worth. A quote far from every
+// play was priced on some other stake, such as a bet behind the hand or another player's currency, and
+// would read as a huge gain or loss, so it is left out instead.
+const CASH_OUT_PLAUSIBLE_GAP = 0.25;
+
+function cashOutOption(cashOut: DecisionSituation['cashOut'], plays: readonly ActionValue[]): ActionValue | undefined {
+	if (!cashOut || cashOut.stake <= 0) {
+		return undefined;
+	}
+
+	const expectedValue = cashOut.amount / cashOut.stake - 1;
+	const bestPlay = Math.max(...plays.map(play => play.expectedValue));
+
+	if (Math.abs(expectedValue - bestPlay) > CASH_OUT_PLAUSIBLE_GAP) {
+		return undefined;
+	}
+
+	return {
+		action: Action.CASH_OUT,
+		expectedValue,
+	};
+}
+
 export function adviseHand(situation: DecisionSituation): HandAdvice {
 	const cardsOut = situation.cardsOut ?? [...situation.playerCards, situation.dealerUpCard];
 	const odds = shoeOddsWithout(cardsOut);
@@ -74,11 +97,10 @@ export function adviseHand(situation: DecisionSituation): HandAdvice {
 		});
 	}
 
-	if (situation.cashOut && situation.cashOut.stake > 0) {
-		options.push({
-			action: Action.CASH_OUT,
-			expectedValue: situation.cashOut.amount / situation.cashOut.stake - 1,
-		});
+	const cashOut = cashOutOption(situation.cashOut, options);
+
+	if (cashOut) {
+		options.push(cashOut);
 	}
 
 	const ranked = options.toSorted((left, right) => right.expectedValue - left.expectedValue);

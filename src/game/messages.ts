@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { betSchema } from './bets';
 import { cardFromScanCode } from './cards';
 
 // Messages from the Pragmatic Play game server are JSON objects with a single key naming the message.
@@ -40,12 +41,48 @@ const decisionOfferSchema = z.object({
 
 export type DecisionOffer = z.infer<typeof decisionOfferSchema>;
 
-const handSchema = z.object({
-	cards: z.array(cardSchema),
-	decisionOffer: decisionOfferSchema.optional(),
-	activeHand: z.boolean().optional(),
-	isDealingCompleted: z.boolean().optional(),
-});
+export const PlayerMove = {
+	HIT: 'hit',
+	STAND: 'stand',
+	DOUBLE: 'double',
+	SPLIT: 'split',
+	CASH_OUT: 'cashOut',
+} as const;
+
+export type PlayerMove = (typeof PlayerMove)[keyof typeof PlayerMove];
+
+const MOVES_BY_DECISION: Readonly<Record<string, PlayerMove>> = {
+	HIT: PlayerMove.HIT,
+	STAND: PlayerMove.STAND,
+	DOUBLEDOWN: PlayerMove.DOUBLE,
+	SPLIT: PlayerMove.SPLIT,
+	CASHOUT: PlayerMove.CASH_OUT,
+};
+
+// Hands report their latest move as "HIT", "DOUBLEDOWN" and so on, or "None" once a queued move is
+// cancelled.
+function movePlayed(decision: string | undefined): PlayerMove | undefined {
+	return decision === undefined ? undefined : MOVES_BY_DECISION[decision];
+}
+
+const handSchema = z
+	.object({
+		cards: z.array(cardSchema),
+		decisionOffer: decisionOfferSchema.optional(),
+		activeHand: z.boolean().optional(),
+		isDealingCompleted: z.boolean().optional(),
+		currentDecision: z.string().optional(),
+	})
+	.transform(hand => ({
+		cards: hand.cards,
+		decisionOffer: hand.decisionOffer,
+		activeHand: hand.activeHand,
+		isDealingCompleted: hand.isDealingCompleted,
+
+		// The move the game has carried out on the cards shown. While an offer still stands, the move is
+		// only queued in advance and can be cancelled, so it does not count yet.
+		madeMove: hand.decisionOffer ? undefined : movePlayed(hand.currentDecision),
+	}));
 
 export type Hand = z.infer<typeof handSchema>;
 
@@ -74,16 +111,11 @@ const seatSchema = z.object({
 	event: z.enum(SeatEvent),
 });
 
-const BetCategory = {
-	MAIN: 'MAIN',
-} as const;
-
-const betSchema = z.object({
+// Sent to this player alone as each round they bet on settles: everything paid back to them, stakes
+// included.
+const roundWinSchema = z.object({
 	gameId: z.string(),
-	seat: z.coerce.number(),
-	amount: z.coerce.number(),
-	betCategory: z.string(),
-	userId: z.string(),
+	win: z.coerce.number(),
 });
 
 const bettingWindowSchema = z.object({
@@ -101,7 +133,8 @@ export const MessageKind = {
 	SEAT_HANDS: 'seatHands',
 	SEAT_TAKEN: 'seatTaken',
 	SEAT_LEFT: 'seatLeft',
-	MAIN_BET: 'mainBet',
+	BET_PLACED: 'betPlaced',
+	ROUND_PAID: 'roundPaid',
 	BETS_OPENED: 'betsOpened',
 	BETS_CLOSED: 'betsClosed',
 	SHOE_IDENTIFIED: 'shoeIdentified',
@@ -127,14 +160,20 @@ const gameMessageSchema = z.union([
 		})),
 	z
 		.object({
-			bet: betSchema.refine(bet => bet.betCategory === BetCategory.MAIN),
+			bet: betSchema,
 		})
 		.transform(message => ({
-			kind: MessageKind.MAIN_BET,
-			gameId: message.bet.gameId,
-			seatNumber: message.bet.seat,
-			userId: message.bet.userId,
-			amount: message.bet.amount,
+			kind: MessageKind.BET_PLACED,
+			bet: message.bet,
+		})),
+	z
+		.object({
+			win: roundWinSchema,
+		})
+		.transform(message => ({
+			kind: MessageKind.ROUND_PAID,
+			gameId: message.win.gameId,
+			amount: message.win.win,
 		})),
 	z
 		.object({

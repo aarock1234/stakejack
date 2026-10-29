@@ -2,10 +2,13 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'wxt';
 
 import { GAME_HOST_PERMISSIONS } from './src/game/game-frame';
+import { FIREFOX_ADDON_ID, FIREFOX_UPDATE_URL } from './src/updates/releases';
 
 const FIREFOX_SETTINGS = {
 	gecko: {
-		id: 'stakejack@stakejack.local',
+		id: FIREFOX_ADDON_ID,
+		// Firefox checks this list about once a day and installs any newer signed version it names.
+		update_url: FIREFOX_UPDATE_URL,
 		// Main-world content scripts arrived in Firefox 128.
 		strict_min_version: '128.0',
 		data_collection_permissions: {
