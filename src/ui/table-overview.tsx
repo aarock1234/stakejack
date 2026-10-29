@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 import { Hourglass, Target } from 'lucide-react';
 
@@ -87,30 +87,48 @@ function PlayedSeat({ seat }: PlayedSeatProps): ReactElement {
 	);
 }
 
-type TableOverviewProps = {
-	view: AdvisorView;
-	// The dealer's chances already rest on the table beside their score.
-	isDealerOnTable: boolean;
+type OverviewPartProps = {
+	children: ReactNode;
 };
 
-// Shown whenever there is nothing to decide: how the player's hands stand, the dealer, the shoe, and the
-// session.
-export function TableOverview({ view, isDealerOnTable }: TableOverviewProps): ReactElement {
+// One part of the overview. The hairlines between parts keep the dealer, hands, shoe, and session from
+// running together.
+function OverviewPart({ children }: OverviewPartProps): ReactElement {
+	return <div className="py-4 first:pt-0 last:pb-0">{children}</div>;
+}
+
+type TableOverviewProps = {
+	view: AdvisorView;
+};
+
+// Shown whenever there is nothing to decide: the dealer's hand, how the player's hands stand against it,
+// the shoe, and the session. The dealer stays here until the round is cleared, so their finished hand can
+// be read after the last card.
+export function TableOverview({ view }: TableOverviewProps): ReactElement {
 	const playedSeats = view.outlooks.filter(seat => seat.role !== SeatRole.OTHER);
 
-	// A hairline between each part keeps the hands, dealer, shoe, and session from running together.
 	return (
-		<section className="flex flex-col gap-4 [&>*+*]:border-t [&>*+*]:border-border-faint [&>*+*]:pt-4">
+		<section className="flex flex-col divide-y divide-border-faint">
+			{view.dealer && (
+				<OverviewPart>
+					<DealerOverview dealer={view.dealer} />
+				</OverviewPart>
+			)}
+
 			{playedSeats.map(seat => (
-				<PlayedSeat key={seat.seatNumber} seat={seat} />
+				<OverviewPart key={seat.seatNumber}>
+					<PlayedSeat seat={seat} />
+				</OverviewPart>
 			))}
 
-			{view.dealer && !isDealerOnTable && <DealerOverview dealer={view.dealer} />}
-
-			<ShoeOverview shoe={view.shoe} />
+			<OverviewPart>
+				<ShoeOverview shoe={view.shoe} />
+			</OverviewPart>
 
 			{view.wallet && view.session.roundsPlayed > 0 && (
-				<SessionOverview session={view.session} currency={view.wallet.currency} />
+				<OverviewPart>
+					<SessionOverview session={view.session} currency={view.wallet.currency} />
+				</OverviewPart>
 			)}
 		</section>
 	);

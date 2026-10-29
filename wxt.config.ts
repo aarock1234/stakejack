@@ -25,8 +25,9 @@ export default defineConfig({
 		name: 'Stakejack',
 		description: 'Shows the best blackjack move on Pragmatic Play Live Blackjack tables.',
 		host_permissions: GAME_HOST_PERMISSIONS,
-		// Keeps the cards seen from each table's shoe, so the count survives a reload.
-		permissions: ['storage'],
+		// Storage keeps the cards seen from each table's shoe, so the count survives a reload. Alarms wake the
+		// Firefox background script to check for updates.
+		permissions: browser === 'firefox' ? ['storage', 'alarms'] : ['storage'],
 		...(browser === 'firefox' && {
 			browser_specific_settings: FIREFOX_SETTINGS,
 		}),

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { AdvisorStore } from '@/advisor/advisor-store';
 import type { AdvisorView, HandDecision } from '@/advisor/advisor-view';
+import type { SessionSummary } from '@/advisor/session-tracker';
 import { BridgeSource } from '@/game/bridge';
 import type { BridgeMessage } from '@/game/bridge';
 import { actionLabel, formatCount, formatPercent, handLabel } from '@/ui/format';
@@ -93,14 +94,22 @@ async function main(): Promise<void> {
 		}
 	}
 
-	const { status, session } = store.getSnapshot();
-	const { moves } = session;
+	console.log(`final status: ${store.getSnapshot().status}`);
+	console.log(describeSession(store.getSnapshot().session));
 
-	console.log(`final status: ${status}`);
-	console.log(
-		`session: ${session.roundsPlayed} rounds, wagered ${session.wagered}, net ${session.net}, expected ${session.expected.toFixed(2)}`
-	);
-	console.log(`moves: ${moves.movesMatched} of ${moves.movesPlayed} like the advice, cost ${moves.cost.toFixed(2)}`);
+	// A store started late, as after an extension update, catches up on the same frames in one go.
+	const caughtUp = new AdvisorStore();
+
+	caughtUp.replay(frames.map(toBridgeMessage));
+	console.log(`after catching up, ${describeSession(caughtUp.getSnapshot().session)}`);
+}
+
+function describeSession(session: SessionSummary): string {
+	const { moves } = session;
+	const totals = `${session.roundsPlayed} rounds, wagered ${session.wagered}, net ${session.net}, expected ${session.expected.toFixed(2)}`;
+	const review = `${moves.movesMatched} of ${moves.movesPlayed} moves like the advice, cost ${moves.cost.toFixed(2)}`;
+
+	return `session: ${totals}; ${review}`;
 }
 
 await main();

@@ -43,6 +43,11 @@ export function currentTrueCount(table: TableTracker): number | undefined {
 	return shoeCards ? trueCount(shoeCards) : undefined;
 }
 
+// The player's edge on a main bet placed now: adjusted for the count when there is one.
+export function currentEdge(table: TableTracker): number {
+	return estimateEdge(currentTrueCount(table));
+}
+
 function estimateReshuffle(cardsDealt: number, roundsDealt: number): ReshuffleEstimate {
 	const cardsLeft = Math.max(RESHUFFLE_AT_CARD - cardsDealt, 0);
 

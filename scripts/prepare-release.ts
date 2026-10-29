@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { copyFile, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { z } from 'zod';
@@ -46,22 +46,15 @@ async function readVersion(): Promise<string> {
 async function findSignedFirefoxPackage(version: string): Promise<string> {
 	const fileNames = await readdir(OUTPUT_DIRECTORY);
 
-	const candidates = fileNames
-		.filter(fileName => fileName.endsWith(`-${version}.xpi`) && !fileName.startsWith('stakejack-'))
-		.map(fileName => path.join(OUTPUT_DIRECTORY, fileName));
+	const signedPackage = fileNames.find(
+		fileName => fileName.endsWith(`-${version}.xpi`) && !fileName.startsWith('stakejack-')
+	);
 
-	if (candidates.length === 0) {
+	if (!signedPackage) {
 		throw new Error(`no signed Firefox package for ${version}, run pnpm sign:firefox first`);
 	}
 
-	const modified = await Promise.all(candidates.map(async candidate => (await stat(candidate)).mtimeMs));
-	const newest = candidates[modified.indexOf(Math.max(...modified))];
-
-	if (!newest) {
-		throw new Error(`no signed Firefox package for ${version}`);
-	}
-
-	return newest;
+	return path.join(OUTPUT_DIRECTORY, signedPackage);
 }
 
 async function sha256Of(filePath: string): Promise<string> {

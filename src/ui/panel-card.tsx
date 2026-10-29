@@ -21,12 +21,11 @@ import type { DragHandle } from './use-panel-position';
 
 type PanelBodyProps = {
 	view: AdvisorView;
-	isDealerOnTable: boolean;
 };
 
 // The one thing that matters right now: the hand being played, the insurance offer, the next bet, or,
 // with nothing to decide, an overview of the player's hands, the dealer, the shoe, and the session.
-function PanelBody({ view, isDealerOnTable }: PanelBodyProps): ReactElement {
+function PanelBody({ view }: PanelBodyProps): ReactElement {
 	if (view.decisions.length > 0) {
 		const isAnyHandActive = view.decisions.some(decision => decision.isActive);
 
@@ -50,7 +49,7 @@ function PanelBody({ view, isDealerOnTable }: PanelBodyProps): ReactElement {
 		return <BetAdvice bet={view.bet} currency={view.wallet.currency} />;
 	}
 
-	return <TableOverview view={view} isDealerOnTable={isDealerOnTable} />;
+	return <TableOverview view={view} />;
 }
 
 // Minimising is only offered on the live panel, which remembers the choice.
@@ -80,8 +79,6 @@ type PanelCardProps = {
 	view: AdvisorView;
 	// Seats the game has not drawn where outlooks could rest beside them; listed in the panel instead.
 	unanchoredOutlooks: readonly SeatOutlook[];
-	// The dealer's chances rest on the table beside their score, so the panel leaves them out.
-	isDealerOnTable?: boolean;
 	// Makes the header a handle for moving the panel around the table.
 	dragHandle?: DragHandle;
 	collapse?: CollapseControl;
@@ -94,7 +91,6 @@ export function PanelCard({
 	ref,
 	view,
 	unanchoredOutlooks,
-	isDealerOnTable = false,
 	dragHandle,
 	collapse,
 	className,
@@ -148,10 +144,10 @@ export function PanelCard({
 
 			{!isConnecting && <ShoeStrip shoe={view.shoe} />}
 
+			{/* The content scrolls on its own when the game window is shorter than the panel, keeping the header in reach. */}
 			{!isConnecting && !isCollapsed && (
-				// Scrolls on its own when the game window is shorter than the panel, keeping the header in reach.
 				<CardContent className="flex min-h-0 flex-col gap-5 overflow-y-auto border-t border-border-faint px-4 py-4">
-					<PanelBody view={view} isDealerOnTable={isDealerOnTable} />
+					<PanelBody view={view} />
 
 					{unanchoredOutlooks.length > 0 && (
 						<>

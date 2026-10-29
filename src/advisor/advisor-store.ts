@@ -10,12 +10,16 @@ import { CONNECTING_VIEW, describeTable } from './advisor-view';
 import type { AdvisorView } from './advisor-view';
 import { SessionTracker } from './session-tracker';
 import type { ShoeHistory } from './shoe-history';
+import { currentEdge } from './shoe-view';
 
 type Listener = () => void;
 
+// The shoe history ignores snapshots older than its limit, so the shoe is saved well within it.
+const SHOE_SAVE_INTERVAL_MS = 5 * 1000;
+
 // Owns the table and the player's session for one game frame, and publishes a fresh view whenever a
 // relevant message arrives. Its subscribe and getSnapshot callbacks follow React's external store
-// contract. With a shoe history, it also saves the shoe each round and resumes it after a reload.
+// contract. With a shoe history, it also saves the shoe every few seconds and resumes it after a reload.
 export class AdvisorStore {
 	readonly #table = new TableTracker();
 	readonly #session = new SessionTracker();
@@ -23,6 +27,7 @@ export class AdvisorStore {
 	readonly #history: ShoeHistory | undefined;
 	#view: AdvisorView = CONNECTING_VIEW;
 	#isLoadingHistory = false;
+	#lastShoeSave = 0;
 
 	constructor(history?: ShoeHistory) {
 		this.#history = history;
@@ -32,11 +37,37 @@ export class AdvisorStore {
 		const isFirstGameFrame = message.source === BridgeSource.SOCKET_RECEIVED && !this.#table.hasGameTraffic;
 		const isRelevant = this.#apply(message);
 
+		this.#saveShoeIfDue();
 		this.#resumeShoeIfNeeded();
 
 		if (isRelevant || isFirstGameFrame) {
 			this.#publish();
 		}
+	}
+
+	// Catches up on everything the page saw before this store started, such as after an extension update,
+	// then publishes once. Advice is only worked out again when something it depends on changes, so the
+	// player's moves can still be compared with it; describing the table after every message would take
+	// seconds.
+	replay(messages: readonly BridgeMessage[]): void {
+		let offers = this.#ownOffersKey();
+
+		for (const message of messages) {
+			this.#apply(message);
+
+			const nextOffers = this.#ownOffersKey();
+
+			if (nextOffers !== offers) {
+				this.#describe();
+				offers = nextOffers;
+			}
+		}
+
+		this.#saveShoe();
+		this.#resumeShoeIfNeeded();
+		this.#publish();
+
+		console.info(`stakejack: caught up on ${messages.length} earlier messages`);
 	}
 
 	subscribe = (listener: Listener): (() => void) => {
@@ -76,11 +107,6 @@ export class AdvisorStore {
 		this.#table.receive(message);
 		this.#followSession(message);
 
-		// A new round starting is a natural checkpoint: everything dealt so far belongs to the shoe.
-		if (message.kind === MessageKind.BETS_OPENED) {
-			this.#saveShoe();
-		}
-
 		return true;
 	}
 
@@ -93,7 +119,7 @@ export class AdvisorStore {
 
 			case MessageKind.BET_PLACED:
 				if (message.bet.userId === this.#table.userId) {
-					this.#session.noteBet(message.bet, this.#view.shoe.edge);
+					this.#session.noteBet(message.bet, currentEdge(this.#table));
 				}
 				break;
 
@@ -116,6 +142,34 @@ export class AdvisorStore {
 		}
 	}
 
+	// What the advice on the player's waiting hands depends on: which hands are waiting on a move, as
+	// "seat:hand:cards" entries, and how many cards the table has shown. It changes whenever the advice
+	// needs working out again, and is empty while the player has nothing to decide.
+	#ownOffersKey(): string {
+		const offers: string[] = [];
+
+		for (const seatNumber of this.#table.ownSeats()) {
+			for (const [handIndex, hand] of this.#table.handsAt(seatNumber).entries()) {
+				if (hand.decisionOffer) {
+					offers.push(`${seatNumber}:${handIndex}:${hand.cards.length}`);
+				}
+			}
+		}
+
+		if (offers.length === 0) {
+			return '';
+		}
+
+		return `${offers.join(',')} after ${this.#table.roundRanks().length} cards`;
+	}
+
+	// Keeps a recent snapshot in storage, so a reload or an extension update finds the count where it was.
+	#saveShoeIfDue(): void {
+		if (Date.now() - this.#lastShoeSave >= SHOE_SAVE_INTERVAL_MS) {
+			this.#saveShoe();
+		}
+	}
+
 	#saveShoe(): void {
 		const tableId = this.#table.tableId;
 		const snapshot = this.#table.shoe.snapshot();
@@ -123,6 +177,8 @@ export class AdvisorStore {
 		if (!this.#history || !tableId || !snapshot) {
 			return;
 		}
+
+		this.#lastShoeSave = Date.now();
 
 		this.#history.save(tableId, snapshot).catch((error: unknown) => {
 			console.warn('stakejack: could not save the shoe', error);
@@ -179,11 +235,17 @@ export class AdvisorStore {
 		return true;
 	}
 
-	#publish(): void {
+	// Works out the view, and remembers the advice in it so the player's next moves can be compared.
+	#describe(): AdvisorView {
 		const view = describeTable(this.#table, this.#session.summary);
 
 		this.#session.noteOfferedAdvice(view.decisions, seatNumber => this.#table.mainBetAt(seatNumber));
-		this.#view = view;
+
+		return view;
+	}
+
+	#publish(): void {
+		this.#view = this.#describe();
 
 		for (const listener of this.#listeners) {
 			listener();

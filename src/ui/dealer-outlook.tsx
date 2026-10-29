@@ -7,7 +7,7 @@ import { Caption } from './caption';
 import { ChanceList } from './chance-list';
 import type { ChanceRow } from './chance-list';
 import { formatHandTotal, formatShare } from './format';
-import { MiniPlayingCard } from './playing-card';
+import { PlayingCard } from './playing-card';
 import { TableChip } from './table-chip';
 import type { TablePoint } from './use-table-anchors';
 
@@ -26,7 +26,7 @@ function resultLabel(result: DealerResult): string {
 		return 'Bust';
 	}
 
-	return `Ends on ${result}`;
+	return `Stands on ${result}`;
 }
 
 function chanceRows(chances: readonly DealerChance[]): ChanceRow[] {
@@ -120,17 +120,17 @@ type DealerOverviewProps = {
 	dealer: DealerOutlook;
 };
 
-// The panel's single line for the dealer, for when the game's dealer area cannot be found on the table.
+// The dealer's hand in the panel, card by card, with their bust chance or how they finished.
 export function DealerOverview({ dealer }: DealerOverviewProps): ReactElement {
 	return (
 		<section className="flex flex-col gap-2">
 			<Caption info={DEALER_INFO}>Dealer, {dealerTotal(dealer)}</Caption>
 
-			<div className="flex items-center justify-between gap-3">
-				<div className="flex gap-0.5">
+			<div className="flex items-end justify-between gap-3">
+				<div className="flex flex-wrap gap-1">
 					{/* Cards are only ever appended to a hand, so their position is a stable identity. */}
 					{dealer.cards.map((card, position) => (
-						<MiniPlayingCard key={position} card={card} />
+						<PlayingCard key={position} card={card} />
 					))}
 				</div>
 				<DealerSummary dealer={dealer} />

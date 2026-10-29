@@ -4,7 +4,7 @@ import { BetKind } from './bets';
 import type { PlacedBet } from './bets';
 import type { CardFace, Rank } from './cards';
 import { CommandName } from './commands';
-import type { CommandBetBehind, GameCommand } from './commands';
+import type { CommandBet, GameCommand } from './commands';
 import { MessageKind } from './messages';
 import type { GameMessage, Hand } from './messages';
 import { ShoeTracker } from './shoe-tracker';
@@ -228,7 +228,7 @@ export class TableTracker {
 	}
 
 	// The player's bet list names every bet behind they still have, so any other is taken back.
-	#replaceOwnBetsBehind(betsBehind: readonly CommandBetBehind[]): void {
+	#replaceOwnBetsBehind(betsBehind: readonly CommandBet[]): void {
 		this.#ownBetsBehind.clear();
 
 		for (const betBehind of betsBehind) {

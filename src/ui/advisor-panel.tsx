@@ -40,7 +40,6 @@ export function AdvisorPanel({ store, isShownWhileConnecting }: AdvisorPanelProp
 				ref={panelRef}
 				view={view}
 				unanchoredOutlooks={unanchoredOutlooks}
-				isDealerOnTable={anchors.dealer !== undefined}
 				dragHandle={dragHandle}
 				collapse={{
 					isCollapsed,

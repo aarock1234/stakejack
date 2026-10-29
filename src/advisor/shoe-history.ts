@@ -4,10 +4,10 @@ import { z } from 'zod';
 import { Rank } from '@/game/cards';
 import type { ShoeSnapshot } from '@/game/shoe-tracker';
 
-// A count is only valid if every card of the shoe was seen. The snapshot is saved as each round opens, and a
-// round takes well over this long, so a newer snapshot means no cards were dealt while the page was away.
-// Anything older may have missed rounds, and the shoe code (a colour) can repeat on a later shoe, so the
-// count starts over instead of resuming wrong.
+// A count is only valid if every card of the shoe was seen. The snapshot is saved every few seconds while
+// the table is live, so a newer one means little or nothing was dealt while the page was away. Anything
+// older may have missed rounds, and the shoe code (a colour) can repeat on a later shoe, so the count
+// starts over instead of resuming wrong.
 const MAX_AGE_MS = 40 * 1000;
 
 const savedShoeSchema = z.object({

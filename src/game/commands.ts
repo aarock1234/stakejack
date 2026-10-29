@@ -21,19 +21,29 @@ const commandAttributesSchema = z.object({
 	seatNum: z.coerce.number().optional(),
 });
 
-// A bet placed behind another player's hand: it rides on their decisions.
-export type CommandBetBehind = {
-	seatNumber: number;
-	amount: number;
-};
+// One <bet> element of a command, such as <bet seat="5" amount="6" betbehind="false" .../>. A bet behind
+// another player's hand rides on their decisions.
+const commandBetSchema = z
+	.object({
+		seat: z.coerce.number(),
+		amount: z.coerce.number(),
+		betbehind: z.stringbool().default(false),
+	})
+	.transform(bet => ({
+		seatNumber: bet.seat,
+		amount: bet.amount,
+		isBehind: bet.betbehind,
+	}));
+
+export type CommandBet = z.infer<typeof commandBetSchema>;
 
 export type GameCommand = {
 	name: string;
 	userId?: string;
-	// Every seat this command acts for: the command's own seat and the seats of any bets it places.
+	// Every seat this command acts for: the command's own seat and the seats it bets on as their owner.
 	seatNumbers: readonly number[];
 	// The player's complete list of bets behind, present only on commands that place bets.
-	betsBehind?: readonly CommandBetBehind[];
+	betsBehind?: readonly CommandBet[];
 };
 
 function readAttributes(attributeText: string): Record<string, string> {
@@ -48,38 +58,18 @@ function readAttributes(attributeText: string): Record<string, string> {
 	return attributes;
 }
 
-// Seats the player bets on as the hand's owner. Betting behind someone else's hand does not make the
-// seat theirs: the other player still makes every decision on it.
-function readBetSeats(data: string): number[] {
-	const seats: number[] = [];
+function readBets(data: string): CommandBet[] {
+	const bets: CommandBet[] = [];
 
 	for (const [, attributeText = ''] of data.matchAll(BET_PATTERN)) {
-		const { seat, betbehind } = readAttributes(attributeText);
+		const result = commandBetSchema.safeParse(readAttributes(attributeText));
 
-		if (seat !== undefined && betbehind !== 'true') {
-			seats.push(Number(seat));
+		if (result.success) {
+			bets.push(result.data);
 		}
 	}
 
-	return seats;
-}
-
-function readBetsBehind(data: string): CommandBetBehind[] {
-	const betsBehind: CommandBetBehind[] = [];
-
-	for (const [, attributeText = ''] of data.matchAll(BET_PATTERN)) {
-		const { seat, amount, betbehind } = readAttributes(attributeText);
-		const stake = Number(amount);
-
-		if (seat !== undefined && betbehind === 'true' && Number.isFinite(stake)) {
-			betsBehind.push({
-				seatNumber: Number(seat),
-				amount: stake,
-			});
-		}
-	}
-
-	return betsBehind;
+	return bets;
 }
 
 export function parseGameCommand(data: string): GameCommand | undefined {
@@ -97,12 +87,17 @@ export function parseGameCommand(data: string): GameCommand | undefined {
 	}
 
 	const { userId, seatNum } = result.data;
-	const seatNumbers = seatNum === undefined ? readBetSeats(data) : [seatNum, ...readBetSeats(data)];
+	const bets = readBets(data);
+
+	// Betting behind someone else's hand does not make the seat the player's: its owner still makes every
+	// decision on it.
+	const ownedBetSeats = bets.filter(bet => !bet.isBehind).map(bet => bet.seatNumber);
+	const seatNumbers = seatNum === undefined ? ownedBetSeats : [seatNum, ...ownedBetSeats];
 
 	return {
 		name,
 		userId,
 		seatNumbers: [...new Set(seatNumbers)],
-		betsBehind: name === CommandName.PLACE_BETS ? readBetsBehind(data) : undefined,
+		betsBehind: name === CommandName.PLACE_BETS ? bets.filter(bet => bet.isBehind) : undefined,
 	};
 }

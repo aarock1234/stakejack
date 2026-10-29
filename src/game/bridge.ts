@@ -2,6 +2,20 @@
 // The detail is a JSON string so it crosses the page and extension worlds unchanged in every browser.
 export const BRIDGE_EVENT = 'stakejack:bridge';
 
+// The page-world tap outlives an extension update, which replaces only the content script. The new
+// content script asks for everything seen so far and receives it in one event, so it rebuilds the table,
+// the count, and the session exactly where the old one left off.
+export const HISTORY_REQUEST_EVENT = 'stakejack:history-request';
+export const HISTORY_EVENT = 'stakejack:history';
+
+// Socket messages are JSON objects named by their single key. Only the kinds the advisor reads are kept
+// for a replay, which leaves out the chatter of timers, pings, and results it never decodes.
+const REPLAYED_MESSAGE_KEYS = ['playerSeat', 'seat', 'bet', 'win', 'betsopen', 'betsclosed', 'currentShoe'] as const;
+
+export function isReplayedSocketMessage(data: string): boolean {
+	return REPLAYED_MESSAGE_KEYS.some(key => data.startsWith(`{"${key}":`));
+}
+
 // Game client API responses worth reading: the player's wallet and the table's bet limits.
 export const ApiPath = {
 	WALLET_BALANCE: '/api/wallet/balance',

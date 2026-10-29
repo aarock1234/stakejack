@@ -5,8 +5,8 @@ import { createRoot } from 'react-dom/client';
 
 import { AdvisorStore } from '@/advisor/advisor-store';
 import { extensionShoeHistory } from '@/advisor/shoe-history';
-import { BRIDGE_EVENT } from '@/game/bridge';
-import { decodeBridgeMessage } from '@/game/bridge-schema';
+import { BRIDGE_EVENT, HISTORY_EVENT, HISTORY_REQUEST_EVENT } from '@/game/bridge';
+import { decodeBridgeHistory, decodeBridgeMessage } from '@/game/bridge-schema';
 import { GAME_FRAME_MATCHES, isGameClientFrame } from '@/game/game-frame';
 import { AdvisorPanel } from '@/ui/advisor-panel';
 
@@ -44,6 +44,14 @@ export default defineContentScript({
 				store.handle(message);
 			}
 		});
+
+		// After an extension update the game is already running, so catch up on what the page-world tap
+		// has seen. It answers synchronously, before any further live message, or not at all on a fresh page.
+		ctx.addEventListener(document, HISTORY_EVENT, event => {
+			store.replay(decodeBridgeHistory('detail' in event ? event.detail : undefined));
+		});
+
+		document.dispatchEvent(new CustomEvent(HISTORY_REQUEST_EVENT));
 
 		const ui = await createShadowRootUi(ctx, {
 			name: UI_NAME,

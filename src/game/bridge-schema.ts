@@ -20,20 +20,36 @@ const bridgeMessageSchema = z.discriminatedUnion('source', [
 	}),
 ]) satisfies z.ZodType<BridgeMessage>;
 
-export function decodeBridgeMessage(detail: unknown): BridgeMessage | undefined {
+function parseDetail(detail: unknown): unknown {
 	if (typeof detail !== 'string') {
 		return undefined;
 	}
 
-	let json: unknown;
-
 	try {
-		json = JSON.parse(detail);
+		return JSON.parse(detail);
 	} catch {
 		return undefined;
 	}
+}
 
-	const result = bridgeMessageSchema.safeParse(json);
+export function decodeBridgeMessage(detail: unknown): BridgeMessage | undefined {
+	const result = bridgeMessageSchema.safeParse(parseDetail(detail));
 
 	return result.success ? result.data : undefined;
+}
+
+// Everything the page-world tap has seen so far, oldest first. A message the advisor no longer
+// understands, perhaps from an older tap, is skipped rather than discarding the rest.
+export function decodeBridgeHistory(detail: unknown): BridgeMessage[] {
+	const entries = z.array(z.unknown()).safeParse(parseDetail(detail));
+
+	if (!entries.success) {
+		return [];
+	}
+
+	return entries.data.flatMap(entry => {
+		const result = bridgeMessageSchema.safeParse(entry);
+
+		return result.success ? [result.data] : [];
+	});
 }
