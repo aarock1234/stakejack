@@ -1,4 +1,7 @@
+import { BetKind } from '@/game/bets';
 import { bestTotal, handPoints, isSoft, Rank } from '@/game/cards';
+import { PairHand, PokerHand } from '@/game/side-bets';
+import type { SideBetWin } from '@/game/side-bets';
 import { Action } from '@/strategy/advice';
 
 const ACTION_LABELS: Readonly<Record<Action, string>> = {
@@ -11,6 +14,29 @@ const ACTION_LABELS: Readonly<Record<Action, string>> = {
 
 export function actionLabel(action: Action): string {
 	return ACTION_LABELS[action];
+}
+
+const PAIR_HAND_LABELS: Readonly<Record<PairHand, string>> = {
+	[PairHand.PERFECT]: 'Perfect pair',
+	[PairHand.COLOURED]: 'Coloured pair',
+	[PairHand.MIXED]: 'Mixed pair',
+};
+
+const POKER_HAND_LABELS: Readonly<Record<PokerHand, string>> = {
+	[PokerHand.SUITED_TRIPS]: 'Suited trips',
+	[PokerHand.STRAIGHT_FLUSH]: 'Straight flush',
+	[PokerHand.THREE_OF_A_KIND]: 'Three of a kind',
+	[PokerHand.STRAIGHT]: 'Straight',
+	[PokerHand.FLUSH]: 'Flush',
+};
+
+// "Mixed pair" for Perfect Pairs, which names itself, or "21+3 Flush".
+export function sideBetWinLabel(win: SideBetWin): string {
+	if (win.bet === BetKind.PERFECT_PAIRS) {
+		return PAIR_HAND_LABELS[win.hand];
+	}
+
+	return `21+3 ${POKER_HAND_LABELS[win.hand]}`;
 }
 
 export function rankLabel(rank: Rank): string {

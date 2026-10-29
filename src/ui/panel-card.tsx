@@ -15,6 +15,7 @@ import { formatMoney } from './format';
 import { HandAdvice } from './hand-advice';
 import { InsuranceAdvice } from './insurance-advice';
 import { ShoeStrip } from './shoe-strip';
+import { OwnSideBetWins } from './side-bet-wins';
 import { TableOutlooks } from './table-outlooks';
 import { TableOverview } from './table-overview';
 import type { DragHandle } from './use-panel-position';
@@ -143,6 +144,7 @@ export function PanelCard({
 			</CardHeader>
 
 			{!isConnecting && <ShoeStrip shoe={view.shoe} />}
+			{!isConnecting && <OwnSideBetWins outlooks={view.outlooks} />}
 
 			{/* The content scrolls on its own when the game window is shorter than the panel, keeping the header in reach. */}
 			{!isConnecting && !isCollapsed && (

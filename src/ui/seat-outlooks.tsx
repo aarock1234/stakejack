@@ -7,6 +7,7 @@ import { ChanceList } from './chance-list';
 import type { ChanceRow } from './chance-list';
 import { HandStanding } from './hand-standing';
 import { MiniPlayingCard } from './playing-card';
+import { SideBetBadges } from './side-bet-wins';
 import { TableChip } from './table-chip';
 import type { TableAnchors } from './use-table-anchors';
 
@@ -93,6 +94,8 @@ export function SeatOutlookChip({ seat, className, style }: SeatOutlookChipProps
 					<SeatHand key={standing.handIndex} standing={standing} />
 				))}
 			</div>
+
+			{seat.sideBetWins.length > 0 && <SideBetBadges wins={seat.sideBetWins} />}
 		</TableChip>
 	);
 }

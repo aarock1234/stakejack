@@ -6,10 +6,12 @@ import type { CardFace, Rank } from './cards';
 import { CommandName } from './commands';
 import type { CommandBet, GameCommand } from './commands';
 import { MessageKind } from './messages';
-import type { GameMessage, Hand } from './messages';
+import type { DealtCard, GameMessage, Hand } from './messages';
 import { ShoeTracker } from './shoe-tracker';
 
 const DEALER_SEAT = -1;
+
+const NO_SIDE_BETS: ReadonlySet<BetKind> = new Set();
 
 // Follows one table: who sits where, the current round's hands and main bets, the shoe, the betting
 // window, and the player's wallet. The player is identified from their wallet or their own outgoing
@@ -28,6 +30,7 @@ export class TableTracker {
 	readonly #seatOwners = new Map<number, string>();
 	readonly #playerSeats = new Set<number>();
 	readonly #mainBets = new Map<number, number>();
+	readonly #sideBets = new Map<number, Set<BetKind>>();
 	readonly #ownBetsBehind = new Map<number, number>();
 	readonly #hands = new Map<number, readonly Hand[]>();
 
@@ -190,6 +193,18 @@ export class TableTracker {
 		return this.#mainBets.get(seatNumber);
 	}
 
+	// The side bets placed on a seat this round, by anyone sitting there.
+	sideBetsAt(seatNumber: number): ReadonlySet<BetKind> {
+		return this.#sideBets.get(seatNumber) ?? NO_SIDE_BETS;
+	}
+
+	// A seat's first two cards in the order they were dealt, which a split later moves into separate hands.
+	startingCardsAt(seatNumber: number): readonly DealtCard[] {
+		const cards = this.handsAt(seatNumber).flatMap(hand => hand.cards);
+
+		return cards.toSorted((left, right) => left.sequence - right.sequence).slice(0, 2);
+	}
+
 	// Seats where the player has a bet behind someone else's hand this round, in seat order.
 	betBehindSeats(): number[] {
 		const ownSeats = this.ownSeats();
@@ -208,6 +223,11 @@ export class TableTracker {
 	// Only main bets settle who owns a seat and what its hand is staked at. Someone betting on a seat another
 	// player owns is betting behind, even if the bet does not sit on the bet-behind spot.
 	#recordBet(bet: PlacedBet): void {
+		if (bet.kind === BetKind.PERFECT_PAIRS || bet.kind === BetKind.TWENTY_ONE_PLUS_THREE) {
+			this.#recordSideBet(bet);
+			return;
+		}
+
 		if (bet.kind !== BetKind.MAIN) {
 			return;
 		}
@@ -219,6 +239,18 @@ export class TableTracker {
 
 		this.#recordOwner(bet.seatNumber, bet.userId);
 		this.#mainBets.set(bet.seatNumber, bet.amount);
+	}
+
+	#recordSideBet(bet: PlacedBet): void {
+		const bets = this.#sideBets.get(bet.seatNumber) ?? new Set<BetKind>();
+
+		if (bet.amount > 0) {
+			bets.add(bet.kind);
+		} else {
+			bets.delete(bet.kind);
+		}
+
+		this.#sideBets.set(bet.seatNumber, bets);
 	}
 
 	#recordBetBehind(bet: PlacedBet): void {
@@ -257,6 +289,7 @@ export class TableTracker {
 		this.#gameId = gameId;
 		this.#hands.clear();
 		this.#mainBets.clear();
+		this.#sideBets.clear();
 		this.#ownBetsBehind.clear();
 	}
 

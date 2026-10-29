@@ -7,7 +7,7 @@ import type { AdvisorView, HandDecision } from '@/advisor/advisor-view';
 import type { SessionSummary } from '@/advisor/session-tracker';
 import { BridgeSource } from '@/game/bridge';
 import type { BridgeMessage } from '@/game/bridge';
-import { actionLabel, formatCount, formatPercent, handLabel } from '@/ui/format';
+import { actionLabel, formatCount, formatPercent, handLabel, sideBetWinLabel } from '@/ui/format';
 
 // Replays a capture from tools/ws-recorder through the advisor and prints every piece of advice it
 // would have shown. Usage: pnpm replay <capture.json>
@@ -62,6 +62,10 @@ function describeView(view: AdvisorView): string[] {
 		);
 
 		lines.push(`  table seat ${seat.seatNumber}: ${hands.join(' | ')}`);
+
+		for (const win of seat.sideBetWins) {
+			lines.push(`  side bet won at seat ${seat.seatNumber}: ${sideBetWinLabel(win)}`);
+		}
 	}
 
 	if (view.bet) {

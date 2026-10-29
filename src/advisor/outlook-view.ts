@@ -1,6 +1,8 @@
 import { bestTotal, handPoints, isBust, isNatural, isSoft } from '@/game/cards';
 import type { CardFace, Rank } from '@/game/cards';
 import type { Hand } from '@/game/messages';
+import { sideBetWins } from '@/game/side-bets';
+import type { SideBetWin } from '@/game/side-bets';
 import type { TableTracker } from '@/game/table-tracker';
 import { DEALER_RESULTS, DealerResult, dealerOutcomesFrom } from '@/strategy/dealer';
 import { handOutlook } from '@/strategy/outlook';
@@ -37,6 +39,8 @@ export type SeatOutlook = {
 	seatNumber: number;
 	role: SeatRole;
 	hands: readonly HandStanding[];
+	// Side bets placed on the seat that its first cards have already won.
+	sideBetWins: readonly SideBetWin[];
 };
 
 export type DealerChance = {
@@ -119,6 +123,7 @@ export function describeOutlooks(table: TableTracker, roles: SeatRoles): SeatOut
 	}
 
 	const cardsOut = knownCardsOut(table);
+	const [dealerUpCard] = table.dealerFaces();
 	const outlooks: SeatOutlook[] = [];
 
 	for (const seatNumber of table.seatsInPlay()) {
@@ -129,6 +134,11 @@ export function describeOutlooks(table: TableTracker, roles: SeatRoles): SeatOut
 				seatNumber,
 				role: roleOf(seatNumber, roles),
 				hands,
+				sideBetWins: sideBetWins({
+					startingCards: table.startingCardsAt(seatNumber),
+					dealerUpCard,
+					bets: table.sideBetsAt(seatNumber),
+				}),
 			});
 		}
 	}

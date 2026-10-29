@@ -6,8 +6,10 @@ import { EMPTY_SESSION } from '@/advisor/session-tracker';
 import type { SessionSummary } from '@/advisor/session-tracker';
 import { UNTRACKED_SHOE } from '@/advisor/shoe-view';
 import type { ShoeSummary } from '@/advisor/shoe-view';
+import { BetKind } from '@/game/bets';
 import { cardFromScanCode, Rank } from '@/game/cards';
 import type { CardFace } from '@/game/cards';
+import { sideBetWins } from '@/game/side-bets';
 import { adviseHand, adviseInsurance } from '@/strategy/advice';
 import { adviseBet, estimateEdge, SHOE_SIZE } from '@/strategy/betting';
 import { handOutlook } from '@/strategy/outlook';
@@ -122,13 +124,16 @@ const DEALER_ON_SIXTEEN = dealerOutlook(
 	[Rank.TEN, Rank.NINE, Rank.TEN, Rank.SEVEN, Rank.SIX, Rank.TEN]
 );
 
+// A king and nine of hearts under the dealer's six of hearts: a 21+3 flush.
+const OWN_CARDS = [card('KH1'), card('9H2')];
+
 const OWN_OUTLOOK: SeatOutlook = {
 	seatNumber: 3,
 	role: SeatRole.OWN,
 	hands: [
 		{
 			handIndex: 0,
-			cards: [card('KS1'), card('9H2')],
+			cards: OWN_CARDS,
 			total: 19,
 			isSoft: false,
 			isBust: false,
@@ -136,6 +141,11 @@ const OWN_OUTLOOK: SeatOutlook = {
 			outlook: NINETEEN_AGAINST_SIXTEEN,
 		},
 	],
+	sideBetWins: sideBetWins({
+		startingCards: OWN_CARDS,
+		dealerUpCard: card('6H1'),
+		bets: new Set([BetKind.TWENTY_ONE_PLUS_THREE]),
+	}),
 };
 
 const BEHIND_OUTLOOK: SeatOutlook = {
@@ -152,6 +162,7 @@ const BEHIND_OUTLOOK: SeatOutlook = {
 			outlook: SEVENTEEN_AGAINST_SIXTEEN,
 		},
 	],
+	sideBetWins: [],
 };
 
 export const SampleId = {
@@ -281,6 +292,9 @@ export const PREVIEW_SAMPLES: readonly PreviewSample[] = [
 	},
 ];
 
+// Two black queens: a coloured pair for Perfect Pairs.
+const PAIRED_CARDS = [card('QC1'), card('QS2')];
+
 // The dealer's chip for the preview's table strip.
 export const PREVIEW_DEALER = DEALER_ON_SIXTEEN;
 
@@ -300,6 +314,7 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 				outlook: NINETEEN_AGAINST_SIXTEEN,
 			},
 		],
+		sideBetWins: [],
 	},
 	{
 		...OWN_OUTLOOK,
@@ -323,6 +338,7 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 				},
 			},
 		],
+		sideBetWins: [],
 	},
 	{
 		seatNumber: 4,
@@ -330,7 +346,7 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 		hands: [
 			{
 				handIndex: 0,
-				cards: [card('QC1'), card('JS2')],
+				cards: PAIRED_CARDS,
 				total: 20,
 				isSoft: false,
 				isBust: false,
@@ -342,6 +358,10 @@ export const PREVIEW_SEATS: readonly SeatOutlook[] = [
 				},
 			},
 		],
+		sideBetWins: sideBetWins({
+			startingCards: PAIRED_CARDS,
+			bets: new Set([BetKind.PERFECT_PAIRS]),
+		}),
 	},
 	BEHIND_OUTLOOK,
 ];
